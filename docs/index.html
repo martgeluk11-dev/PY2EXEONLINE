@@ -16,69 +16,26 @@
 <body>
   <header class="site-header">
     <div class="header-inner">
-      <a class="brand" href="/PY2EXEONLINE/" aria-label="Py2EXE home">
+      <a class="brand" href="/PY2EXEONLINE/" aria-label="EXEcify home">
         <img class="brand-logo" src="./static/execify-logo.ico" alt="" aria-hidden="true">
         <span>EXEcify</span>
       </a>
-      <nav class="main-nav" aria-label="Main navigation">
-        <a href="#how-it-works">How it works</a>
-        <a href="#features">Features</a>
-      </nav>
-      <a class="header-cta" href="#builder">Start converting <span>↗</span></a>
+      
+      <a class="header-cta" href="#builder">Convert <span>↗</span></a>
     </div>
   </header>
 
   <main>
-    <section class="hero">
+    <section class="hero simple-hero">
       <div class="hero-inner">
         <div class="hero-copy">
-          <div class="hero-kicker"><span class="kicker-dot"></span> THE ONLINE PYTHON CONVERTER</div>
-          <h1>Your Python.<br><span>Windows ready.</span></h1>
-          <p class="hero-lead">Turn your Python project into a Windows executable. No complicated setup, no local build tools. Just your project and a few clicks.</p>
-          <div class="hero-actions">
-            <a class="primary-cta" href="#builder">Convert for free <span>↗</span></a>
-            <span class="hero-caption">BUILT ON A REAL WINDOWS MACHINE</span>
-          </div>
-          <div class="hero-trust">
-            <div class="trust-item"><span class="trust-icon">↗</span><span><b>Browser based</b><small>No installation needed</small></span></div>
-            <div class="trust-item"><span class="trust-icon">⌘</span><span><b>Project support</b><small>Include your assets</small></span></div>
-            <div class="trust-item"><span class="trust-icon">▣</span><span><b>Windows output</b><small>Ready to download</small></span></div>
-          </div>
-        </div>
-
-        <div class="hero-visual" aria-label="Illustration showing a Python project becoming a Windows executable">
-          <div class="visual-glow"></div>
-          <div class="visual-orbit orbit-a"></div>
-          <div class="visual-orbit orbit-b"></div>
-          <div class="visual-top-label"><span>PROJECT CONVERSION</span><span>01 — 02</span></div>
-          <div class="visual-code-card">
-            <div class="code-card-head"><span class="code-file-icon">Py</span><span>main.py</span><span class="code-dots">•••</span></div>
-            <div class="code-lines"><i class="code-purple"></i><i class="code-long"></i><i class="code-short"></i><i class="code-blue"></i><i class="code-medium"></i><i class="code-long"></i></div>
-            <div class="code-card-foot"><span>PYTHON PROJECT</span><span>2.4 KB</span></div>
-          </div>
-          <div class="conversion-path"><span></span><b>↗</b><span></span></div>
-          <div class="visual-exe-card">
-            <div class="exe-window-bar"><i></i><i></i><i></i><span>MY APPLICATION</span></div>
-            <div class="exe-app-icon"><span class="app-window"><i></i><i></i><i></i><i></i></span></div>
-            <div class="exe-app-name">my_app.exe</div>
-            <div class="exe-app-meta">WINDOWS EXECUTABLE <span>✓</span></div>
-          </div>
-          <div class="visual-sticker sticker-one"><span>✓</span> NO SETUP</div>
-          <div class="visual-sticker sticker-two"><span>↗</span> .EXE OUTPUT</div>
-          <div class="visual-bottom"><span>FROM SOURCE</span><span class="visual-bottom-line"></span><span>TO WINDOWS</span></div>
+          <h1>Import a python and<br><span>convert to an exe.</span></h1>
         </div>
       </div>
-      <div class="hero-edge"><span>EXEcify · PYTHON TO WINDOWS</span><span>SCROLL TO EXPLORE ↓</span></div>
     </section>
 
     <section class="builder-section" id="builder">
       <div class="section-wrap">
-        <div class="builder-intro">
-          <div class="section-kicker"><span>01</span> LET'S MAKE SOMETHING</div>
-          <h2>Bring your project.<br><span>We'll build the app.</span></h2>
-          <p>Everything you need to package your Python project, in one simple place.</p>
-        </div>
-
         <div class="builder">
           <div class="builder-main">
             <div class="builder-step">
@@ -142,46 +99,12 @@
             </div>
             <button class="build" id="build" type="button" disabled><span>Build my Windows app</span><b>↗</b></button>
             <div class="status" id="status" role="status" aria-live="polite"></div>
-            <div class="progress" id="progress"><i></i></div>
+            <div class="progress" id="progress" role="progressbar" aria-label="Build activity" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>
             <div class="builder-footnote"><span>✳</span> Your build runs on a Windows machine in the cloud.</div>
           </aside>
         </div>
       </div>
     </section>
-
-    <section class="how-section" id="how-it-works">
-      <div class="section-wrap">
-        <div class="how-heading">
-          <div><div class="section-kicker"><span>02</span> NO COMPLICATED WORKFLOW</div><h2>Three steps.<br><span>One Windows app.</span></h2></div>
-          <p>You bring the code. We take care of the packaging process.</p>
-        </div>
-        <div class="steps-grid">
-          <article class="info-step"><div class="info-step-top"><span>01</span><span class="info-step-symbol">↑</span></div><h3>Upload</h3><p>Add your main Python file, the rest of your project and any assets it needs.</p><div class="step-decoration upload-deco"><i></i><i></i><i></i></div></article>
-          <article class="info-step"><div class="info-step-top"><span>02</span><span class="info-step-symbol">⚙</span></div><h3>Configure</h3><p>Pick an output format, set your app name and choose your preferences.</p><div class="step-decoration config-deco"><i></i><i></i><i></i></div></article>
-          <article class="info-step"><div class="info-step-top"><span>03</span><span class="info-step-symbol">↗</span></div><h3>Download</h3><p>Your project is packaged on Windows. When it's ready, download the result.</p><div class="step-decoration download-deco"><i></i></div></article>
-        </div>
-      </div>
-    </section>
-
-    <section class="features-section" id="features">
-      <div class="section-wrap features-inner">
-        <div class="features-copy">
-          <div class="section-kicker"><span>03</span> MADE FOR YOUR WORKFLOW</div>
-          <h2>More than<br><span>just a .py file.</span></h2>
-          <p>Real projects are made of more than code. Bring the files your app depends on and package them together.</p>
-        </div>
-        <div class="feature-list">
-          <div class="feature-row"><span class="feature-number">01</span><div><h3>Keep your project together</h3><p>Upload folders with the images, sounds, fonts and other files your app uses.</p></div><span class="feature-arrow">↗</span></div>
-          <div class="feature-row"><span class="feature-number">02</span><div><h3>Choose your output</h3><p>Create one executable or a packaged application folder.</p></div><span class="feature-arrow">↗</span></div>
-          <div class="feature-row"><span class="feature-number">03</span><div><h3>Build for Windows</h3><p>The conversion runs on a Windows build machine, not in your browser.</p></div><span class="feature-arrow">↗</span></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="closing-banner">
-      <div class="closing-banner-inner"><div><span class="closing-kicker">READY WHEN YOU ARE</span><h2>Your next app starts<br>with a Python file.</h2></div><a href="#builder" class="closing-cta">Start building <span>↗</span></a><div class="closing-watermark">Py<span>.</span></div></div>
-    </section>
-  </main>
 
   <footer class="site-footer">
     <div class="footer-inner"><a class="brand footer-brand" href="/PY2EXEONLINE/"><img class="brand-logo" src="./static/execify-logo.ico" alt="" aria-hidden="true"><span>EXEcify</span></a><span>MAKE YOUR PYTHON PROJECT WINDOWS READY.</span><span>© 2026 EXECIFY</span></div>
