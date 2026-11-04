@@ -13,6 +13,11 @@ export default {
     try {
       if (url.pathname === "/api/convert" && request.method === "POST") {
         const form = await request.formData();
+        const captcha = String(form.get("cf-turnstile-response") || "");
+        if (!env.TURNSTILE_SECRET || !captcha) return reply(JSON.stringify({detail:"Please complete the security check first."}),403,{"Content-Type":"application/json"});
+        const verify = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({secret:env.TURNSTILE_SECRET,response:captcha,remoteip:request.headers.get("CF-Connecting-IP")||""})});
+        const verification = await verify.json();
+        if (!verification.success) return reply(JSON.stringify({detail:"Security check failed. Please try again."}),403,{"Content-Type":"application/json"});
         const files = form.getAll("files");
         const paths = form.getAll("paths").map(String);
         if (!files.length || files.length !== paths.length || files.length > 150)
