@@ -64,6 +64,9 @@ $("build").addEventListener("click",async()=>{
   if(!projectFiles.length)return;
   const data=new FormData();
   projectFiles.forEach(({file,path})=>{data.append("files",file,path);data.append("paths",path)});
+  const captcha=window.turnstile?.getResponse?.();
+  if(!captcha){setStatus("Please complete the security check first.",true);return;}
+  data.append("cf-turnstile-response",captcha);
   data.append("entry_file",$("entry").value);
   data.append("app_name",$("appname").value||"my_app");
   data.append("build_type",format);
@@ -110,6 +113,6 @@ $("build").addEventListener("click",async()=>{
       setStatus(state==="queued"?"Build queued — starting a Windows machine…":"Windows machine is building your app…");
     }
     if(state!=="completed" && state!=="failed") throw new Error("The build took too long. Please try again.");  }catch(error){setStatus(error.message||"Something went wrong.",true)}
-  finally{button.disabled=false;button.querySelector("span").textContent="Build Windows EXE";$("progress").classList.remove("show");renderFiles()}
+  finally{button.disabled=false;button.querySelector("span").textContent="Build Windows EXE";$("progress").classList.remove("show");window.turnstile?.reset?.();renderFiles()}
 });
 renderFiles();
