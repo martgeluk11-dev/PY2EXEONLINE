@@ -3,79 +3,104 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#080b09">
+  <meta name="theme-color" content="#010203">
+  <meta name="description" content="Turn your Python project into a Windows executable. Package your code and project assets online.">
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-  <title>Py2EXE Online</title>
+  <title>Py2EXE Online — Python to Windows</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./static/style.css">
 </head>
 <body>
+  <div class="ambient ambient-blue"></div>
+  <div class="ambient ambient-pink"></div>
   <header class="topbar">
-    <a class="brand" href="/"><span class="mark"><i></i><i></i><i></i></span>py<span>2</span>exe</a>
-    <div class="top-status"><b></b> ONLINE CONVERTER</div>
+    <a class="brand" href="/" aria-label="Py2EXE Online home">
+      <span class="brand-mark"><i></i><i></i><i></i></span>
+      <span>py<span class="brand-accent">2</span>exe<span class="brand-dot">.</span></span>
+    </a>
+    <div class="top-status"><b></b><span>ONLINE CONVERTER</span><span class="status-divider">/</span><span class="status-version">WINDOWS BUILD</span></div>
   </header>
   <main>
     <section class="hero">
-      <div class="eyebrow"><i></i> PYTHON PROJECT → WINDOWS APP</div>
-      <h1>Your Python.<br><em>Your own .exe.</em></h1>
-      <p>Package your entire project into a Windows app. Python files, images, videos, audio and everything in between.</p>
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="eyebrow-line"></span> FROM PYTHON TO WINDOWS</div>
+        <h1>Code it.<br><em>Ship it.</em></h1>
+        <p class="hero-description">Turn your Python project into a Windows executable. Your code, your assets, one build — all in your browser.</p>
+        <div class="hero-meta">
+          <span><i></i> NO INSTALLATION</span>
+          <span><i></i> FULL PROJECT SUPPORT</span>
+          <span><i></i> WINDOWS .EXE</span>
+        </div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="art-orbit orbit-one"></div>
+        <div class="art-orbit orbit-two"></div>
+        <div class="art-core"><span>PY</span><b>→</b><strong>EXE</strong></div>
+        <div class="art-label label-top">PYTHON PROJECT <span>01 / INPUT</span></div>
+        <div class="art-label label-bottom">WINDOWS APP <span>02 / OUTPUT</span></div>
+        <div class="art-cross cross-one"></div><div class="art-cross cross-two"></div>
+      </div>
     </section>
 
+    <div class="section-kicker"><span>01 — THE BUILDER</span><span>CONFIGURE YOUR BUILD <i></i></span></div>
     <section class="panel">
-      <div class="heading"><div><small>01</small><strong>Add your project</strong></div><span>REQUIRED</span></div>
+      <div class="panel-heading">
+        <div><span class="panel-index">01</span><div><h2>Build your application</h2><p>Start with your project files. We’ll handle the packaging.</p></div></div>
+        <span class="required-tag"><i></i> READY WHEN YOU ARE</span>
+      </div>
       <div class="drop" id="drop">
         <input id="files" type="file" multiple>
-        <div class="upload-symbol">↑</div>
+        <div class="upload-symbol"><span>↑</span></div>
         <b>Drop your project files here</b>
         <p>or <label for="files">browse files</label></p>
-        <small>Multiple files supported · Up to 80 MB total</small>
-        <button type="button" class="folder-button" id="folder-button">＋ Select entire project folder</button>
+        <small>PYTHON · IMAGES · VIDEO · AUDIO · OTHER ASSETS <span> / </span> 80 MB MAX</small>
+        <button type="button" class="folder-button" id="folder-button"><span>＋</span> Select entire project folder</button>
         <input id="folder" type="file" webkitdirectory multiple hidden>
       </div>
       <div class="file-summary" id="file-summary" hidden>
-        <div class="summary-top"><b id="file-count">0 files</b><button id="clear" type="button">Remove all</button></div>
+        <div class="summary-top"><b id="file-count">0 files</b><button id="clear" type="button">Remove all <span>×</span></button></div>
         <div class="file-list" id="file-list"></div>
       </div>
 
       <div class="field entry-field">
-        <label for="entry">MAIN PYTHON FILE <span>· REQUIRED</span></label>
+        <label for="entry"><span class="field-number">A</span> MAIN PYTHON FILE <span class="field-optional">/ REQUIRED</span></label>
         <select id="entry" disabled><option value="">Add project files first</option></select>
         <small>This is the .py file that starts your application. Other Python modules are included when imported.</small>
       </div>
 
-      <div class="rule"></div>
-      <div class="heading"><div><small>02</small><strong>Build settings</strong></div><span>OPTIONAL</span></div>
+      <div class="section-rule"><span>02</span><i></i><span>BUILD SETTINGS</span><i></i><span>OPTIONAL</span></div>
       <div class="field">
-        <label for="appname">APPLICATION NAME</label>
+        <label for="appname"><span class="field-number">B</span> APPLICATION NAME</label>
         <input id="appname" value="my_app" maxlength="48" placeholder="my_app">
       </div>
       <div class="grid">
         <div class="field">
-          <label>OUTPUT FORMAT</label>
+          <label><span class="field-number">C</span> OUTPUT FORMAT</label>
           <div class="segments" id="formats">
-            <button type="button" class="selected" data-value="onefile"><b>▣</b> One file<small>Single .exe</small></button>
-            <button type="button" data-value="folder"><b>▤</b> Folder<small>ZIP with dependencies</small></button>
+            <button type="button" class="selected" data-value="onefile"><span class="segment-icon">▣</span><span class="segment-copy"><b>One file</b><small>Single .exe</small></span><i class="segment-check"></i></button>
+            <button type="button" data-value="folder"><span class="segment-icon">▤</span><span class="segment-copy"><b>Folder</b><small>ZIP with dependencies</small></span><i class="segment-check"></i></button>
           </div>
         </div>
         <div class="field">
-          <label>CONSOLE WINDOW</label>
+          <label><span class="field-number">D</span> CONSOLE WINDOW</label>
           <div class="toggle"><div><b>Show console</b><small>Terminal window on launch</small></div><label class="switch"><input id="console" type="checkbox" checked><i></i></label></div>
           <small>Turn off for GUI applications.</small>
         </div>
       </div>
       <div class="field">
-        <label for="icon">APPLICATION ICON <span>· OPTIONAL</span></label>
-        <label class="icon-picker"><span>ICO</span><b id="icon-name">Choose an .ico file</b><input id="icon" type="file" accept=".ico"><em>Browse</em></label>
+        <label for="icon"><span class="field-number">E</span> APPLICATION ICON <span class="field-optional">/ OPTIONAL</span></label>
+        <label class="icon-picker"><span class="ico-badge">ICO</span><b id="icon-name">Choose an .ico file</b><input id="icon" type="file" accept=".ico"><em>Browse files <span>↗</span></em></label>
       </div>
+      <div class="security-row"><span class="security-mark">✳</span><span>Quick security check</span><span class="security-note">PROTECTED BUILD REQUEST</span></div>
       <div class="cf-turnstile" data-sitekey="0x4AAAAAAFzcsHnZICFxC91i"></div>
-      <button class="build" id="build" type="button" disabled><span>Build Windows EXE</span><b>→</b></button>
+      <button class="build" id="build" type="button" disabled><span>Build Windows EXE</span><b>↗</b></button>
       <div class="status" id="status" role="status"></div>
       <div class="progress" id="progress"><i></i></div>
-      <div class="footnote"><b>ⓘ</b><span>Files are packaged into your app, not hosted separately. Your app may need small path changes to load bundled images, music and videos correctly.</span></div>
+      <div class="footnote"><b>i</b><span>Files are packaged into your app, not hosted separately. Your app may need small path changes to load bundled images, music and videos correctly.</span></div>
     </section>
-    <footer><span>PY2EXE ONLINE</span><span>POWERED BY PYINSTALLER</span></footer>
+    <footer><a class="footer-brand" href="/">PY2EXE<span>ONLINE</span></a><span>POWERED BY PYINSTALLER</span><span class="footer-credit">MADE FOR BUILDERS <i>✳</i></span></footer>
   </main>
   <script src="./static/app.js"></script>
 </body>
