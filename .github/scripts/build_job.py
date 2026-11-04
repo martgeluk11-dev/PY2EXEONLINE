@@ -1,4 +1,4 @@
-import json, os, pathlib, subprocess, sys, urllib.parse, urllib.request, shutil, traceback, math
+import json, os, pathlib, subprocess, sys, urllib.parse, urllib.request, urllib.error, shutil, traceback, math, time
 
 job=os.environ["JOB_ID"]
 token=os.environ["JOB_TOKEN"]
@@ -12,8 +12,19 @@ def request(path, data=None, extra=None):
     req=urllib.request.Request(base+path,data=data,headers=h,method="POST" if data is not None else "GET")
     return urllib.request.urlopen(req,timeout=180)
 
+def request_eventually(path, attempts=30):
+    last=None
+    for _ in range(attempts):
+        try:
+            return request(path)
+        except urllib.error.HTTPError as exc:
+            if exc.code != 404: raise
+            last=exc
+            time.sleep(3)
+    raise RuntimeError("Uploaded project is still syncing. Please retry the build.") from last
+
 try:
-    manifest=json.load(request(f"/internal/jobs/{job}/manifest"))
+    manifest=json.load(request_eventually(f"/internal/jobs/{job}/manifest"))
     root=pathlib.Path("project").resolve()
     root.mkdir(exist_ok=True)
     for item in manifest["files"]:
@@ -23,7 +34,7 @@ try:
         with target.open("wb") as out:
             for part in range(item["chunks"]):
                 query=urllib.parse.urlencode({"path":rel,"part":part})
-                with request(f"/internal/jobs/{job}/file?{query}") as r:
+                with request_eventually(f"/internal/jobs/{job}/file?{query}") as r:
                     out.write(r.read())
     m=manifest["metadata"]
     entry=pathlib.Path(m["entry_file"])
@@ -60,7 +71,7 @@ try:
             data=source.read(CHUNK)
             query=urllib.parse.urlencode({"part":part,"total":total,"filename":output.name})
             request(f"/internal/jobs/{job}/result?{query}",data,{"Content-Type":"application/octet-stream"}).read()
-    request(f"/internal/jobs/{job}/complete",b"",{"Content-Type":"application/octet-stream"}).read()
+    request(f"/internal/jobs/{job}/complete?"+urllib.parse.urlencode({"total":total,"filename":output.name}),b"",{"Content-Type":"application/octet-stream"}).read()
 except Exception as e:
     message=str(e) or traceback.format_exc()
     try: request(f"/internal/jobs/{job}/fail",json.dumps({"error":message[-3000:]}).encode(),{"Content-Type":"application/json"}).read()
