@@ -1,5 +1,5 @@
 const $ = (id) => document.getElementById(id);
-const API_BASE = window.PY2EXE_API_BASE || "https://YOUR-WORKER.workers.dev";
+const API_BASE = window.PY2EXE_API_BASE || "https://py2exe-online.martgeluk11.workers.dev";
 const fileInput = $("files"), folderInput = $("folder");
 let projectFiles = [];
 let format = "onefile";
