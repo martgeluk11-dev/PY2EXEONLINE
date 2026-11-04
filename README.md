@@ -4,49 +4,45 @@ A browser-based Python project packager that builds **real Windows .exe files** 
 
 ## Features
 
-- Upload multiple files at once, or select an entire project folder.
-- Choose the main/entry `.py` file.
-- Keep project folder structure and Python modules.
-- Automatically bundle non-Python assets: images, audio, video, fonts, JSON, text files, and more.
-- One-file EXE or onedir ZIP output.
-- Optional `.ico` app icon and console window setting.
-- Drag-and-drop project upload.
+- Upload multiple files or an entire project folder.
+- Choose the main Python entry file.
+- Bundle images, audio, video, fonts, JSON, text files and other assets.
+- Build a single EXE or a ZIP containing an onedir build.
+- Optional .ico icon and console window.
 
-## Important: Windows build host required
+## Online architecture
 
-PyInstaller does not cross-compile Windows executables from Linux. The FastAPI backend must run on a **Windows machine/server**. GitHub stores the source code; GitHub Pages alone cannot run the EXE build backend.
+- GitHub Pages hosts the frontend.
+- A Cloudflare Worker handles uploads and job status.
+- Cloudflare Workers KV stores temporary upload/result chunks for 24 hours.
+- GitHub Actions uses a temporary Windows runner to build with PyInstaller.
 
-## Run on Windows
+The online version does not use R2. It is designed for the Cloudflare Workers Free plan: KV has a free daily quota and operations beyond that quota fail instead of being billed. Keep the account on the Workers Free plan; do not upgrade or enable paid usage. See Cloudflare's [KV limits](https://developers.cloudflare.com/kv/platform/limits/) and [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/).
 
-1. Install Python 3.11+ and make sure `py` works in Command Prompt.
-2. Clone this repository.
-3. Run `start.bat`.
-4. Open http://localhost:8000.
+## Cloudflare setup
 
-For an online public service, deploy the backend on a Windows VPS and put it behind HTTPS/reverse proxy. Do not expose an unrestricted build server to the public internet: uploaded code is untrusted and builds consume CPU/RAM. Add authentication, rate limits, per-user quotas, and isolated worker accounts before public launch.
+1. Create a Worker named `py2exe-online` and paste `cloudflare/src/index.js`.
+2. Create a Workers KV namespace named `PY2EXE_JOBS`.
+3. Add a KV binding to the Worker with variable name `JOBS` and select `PY2EXE_JOBS`.
+4. Add the Worker secret `TURNSTILE_SECRET`.
+5. Add the Worker secret `GITHUB_TOKEN` (a fine-grained token for this repository with Contents: Read and write).
+6. Add the text variable `GITHUB_REPO` with value `martgeluk11-dev/PY2EXEONLINE`.
+7. Deploy the Worker and copy its `workers.dev` URL.
 
-## Project asset paths
+Create a Turnstile widget for the GitHub Pages domain and put its Site Key in `static/index.html`. Put the deployed Worker URL in `static/app.js`. Never put either secret in frontend files.
 
-All uploaded non-`.py` files are bundled automatically while preserving their relative folders. For example, `assets/picture.png` is included at `assets/picture.png` inside the bundle.
+## GitHub setup
 
-For runtime access in a PyInstaller one-file app, resolve bundled assets relative to `sys._MEIPASS`, not the current working directory:
-
-```python
-from pathlib import Path
-import sys
-
-def resource_path(relative_path: str) -> Path:
-    base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
-    return base / relative_path
-
-image_file = resource_path("assets/picture.png")
-```
-
-Use the same approach for MP3/WAV audio, MP4 video, and other bundled resources. PyInstaller packages files; it does not automatically rewrite your app's file paths or install external system codecs.
+Enable GitHub Actions for the repository. The workflow listens for the `py2exe-build` repository dispatch event and builds on `windows-latest`.
 
 ## Limits
 
 - 150 files per project.
-- 200 MB total upload; 100 MB per file.
-- 5-minute build timeout.
-- Python dependencies must already be installed on the build server or added to its environment. This first version does not install arbitrary uploaded requirements automatically.
+- 80 MB total input.
+- 80 MB output.
+- Upload and build data expires after 24 hours.
+- Dependencies not included with the project are not installed automatically. Add required packages to the build workflow if needed.
+
+## Local Windows build
+
+The legacy FastAPI backend can also be run on Windows with Python 3.11+ using `start.bat`.
