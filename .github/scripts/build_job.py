@@ -3,7 +3,7 @@ import json, os, pathlib, subprocess, sys, urllib.parse, urllib.request, urllib.
 job=os.environ["JOB_ID"]
 token=os.environ["JOB_TOKEN"]
 base=os.environ["WORKER_URL"].rstrip("/")
-headers={"Authorization":"Bearer "+token}
+headers={"Authorization":"Bearer "+token,"X-Job-Token":token}
 CHUNK=10*1024*1024
 
 def request(path, data=None, extra=None):
@@ -18,13 +18,16 @@ def request_eventually(path, attempts=30):
         try:
             return request(path)
         except urllib.error.HTTPError as exc:
-            if exc.code != 404: raise
+            if exc.code != 404:
+                detail=exc.read().decode("utf-8","replace")[:500]
+                raise RuntimeError(f"Worker rejected the build request (HTTP {exc.code}): {detail}") from exc
             last=exc
             time.sleep(3)
     raise RuntimeError("Uploaded project is still syncing. Please retry the build.") from last
 
 try:
     manifest=json.load(request_eventually(f"/internal/jobs/{job}/manifest"))
+    request(f"/internal/jobs/{job}/building",b"",{"Content-Type":"application/octet-stream"}).read()
     root=pathlib.Path("project").resolve()
     root.mkdir(exist_ok=True)
     for item in manifest["files"]:
