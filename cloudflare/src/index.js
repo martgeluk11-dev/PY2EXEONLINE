@@ -38,7 +38,9 @@ async function verifyCaptcha(request, env, token) {
   return (await response.json()).success === true;
 }
 function authorized(request, meta) {
-  return (request.headers.get("Authorization") || "") === "Bearer " + meta.token;
+  const expected = "Bearer " + meta.token;
+  return (request.headers.get("Authorization") || "") === expected ||
+    (request.headers.get("X-Job-Token") || "") === meta.token;
 }
 export default {
   async fetch(request, env) {
@@ -152,7 +154,7 @@ export default {
         const filename = (meta.filename||"build.exe").replace(/["\\]/g,"");
         return new Response(stream,{headers:{...cors,"Content-Type":filename.endsWith(".zip")?"application/zip":"application/vnd.microsoft.portable-executable","Content-Disposition":'attachment; filename="'+filename+'"',"Cache-Control":"no-store"}});
       }
-      match = url.pathname.match(/^\/internal\/jobs\/([0-9a-f-]+)\/(manifest|file|result|complete|fail)$/i);
+      match = url.pathname.match(/^\/internal\/jobs\/([0-9a-f-]+)\/(manifest|file|result|building|complete|fail)$/i);
       if (match) {
         const meta = await getMeta(env,match[1]);
         if (!meta) return reply("Job not found",404);
@@ -168,6 +170,11 @@ export default {
           if (!file || !Number.isInteger(part) || part<0 || part>=file.chunks) return reply("Bad file chunk",400);
           const data = await env.JOBS.get(fileKey(meta.id,path,part),"arrayBuffer");
           return data ? new Response(data,{headers:cors}) : reply("Not found",404);
+        }
+        if (action === "building" && request.method === "POST") {
+          meta.status = "building";
+          await saveMeta(env,meta);
+          return reply("ok");
         }
         if (action === "result" && request.method === "POST") {
           const part = Number(url.searchParams.get("part"));
