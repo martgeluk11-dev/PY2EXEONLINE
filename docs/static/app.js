@@ -45,6 +45,52 @@ $("formats").addEventListener("click",e=>{
 });
 $("icon").addEventListener("change",e=>{iconFile=e.target.files[0]||null;$("icon-name").textContent=iconFile?iconFile.name:"Choose an .ico file";});
 function setStatus(message,error=false){$("status").textContent=message;$("status").classList.toggle("error",error);}
+
+let simulatedProgress=0;
+let progressTimer=null;
+function paintProgress(value){
+  simulatedProgress=value;
+  const bar=$("progress");
+  bar.querySelector("i").style.width=value+"%";
+  bar.setAttribute("aria-valuenow",String(Math.round(value)));
+}
+function startProgress(){
+  clearTimeout(progressTimer);
+  simulatedProgress=0;
+  $("progress").classList.add("show");
+  paintProgress(0);
+  const tick=()=>{
+    if(simulatedProgress>=98)return;
+    const boundary=simulatedProgress<60?60:98;
+    const remaining=boundary-simulatedProgress;
+    const step=simulatedProgress<60
+      ? (Math.random()<.28?1:Math.random()<.62?2:4)
+      : (Math.random()<.48?.25:Math.random()<.76?.5:1);
+    paintProgress(Math.min(boundary,simulatedProgress+Math.min(step,remaining)));
+    if(simulatedProgress===60){
+      progressTimer=setTimeout(tick,1900+Math.random()*1100);
+      return;
+    }
+    if(simulatedProgress>=98)return;
+    const delay=simulatedProgress<60
+      ? (Math.random()<.2?850+Math.random()*500:180+Math.random()*260)
+      : (Math.random()<.3?1050+Math.random()*650:420+Math.random()*500);
+    progressTimer=setTimeout(tick,delay);
+  };
+  progressTimer=setTimeout(tick,180);
+}
+function finishProgress(){
+  clearTimeout(progressTimer);
+  progressTimer=null;
+  paintProgress(100);
+}
+function resetProgress(){
+  clearTimeout(progressTimer);
+  progressTimer=null;
+  simulatedProgress=0;
+  paintProgress(0);
+  $("progress").classList.remove("show");
+}
 async function uploadFile(jobId,token,item){
   const chunks=Math.max(1,Math.ceil(item.file.size/CHUNK_SIZE));
   for(let part=0;part<chunks;part++){
@@ -64,7 +110,7 @@ $("build").addEventListener("click",async()=>{
   const captcha=window.turnstile?.getResponse?.();
   if(!captcha){setStatus("Please complete the security check first.",true);return;}
   const button=$("build");button.disabled=true;button.querySelector("span").textContent="Uploading project…";
-  $("progress").classList.add("show");
+  resetProgress();
   try{
     if(API_BASE.includes("YOUR-WORKER"))throw new Error("The build service URL has not been configured yet.");
     const create=await fetch(API_BASE+"/api/jobs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
@@ -81,6 +127,7 @@ $("build").addEventListener("click",async()=>{
     const start=await fetch(API_BASE+"/api/jobs/"+job_id+"/start",{method:"POST",headers:{"Authorization":"Bearer "+upload_token}});
     if(!start.ok)throw new Error(await start.text()||"Could not start the Windows build.");
     button.querySelector("span").textContent="Building your app…";
+    startProgress();
     setStatus("Upload complete. Waiting for a Windows build…");
     const deadline=Date.now()+12*60*1000;
     let state="queued";
@@ -91,6 +138,7 @@ $("build").addEventListener("click",async()=>{
       const result=await check.json();state=result.status;
       if(state==="failed")throw new Error(result.error||"Windows build failed.");
       if(state==="completed"){
+        finishProgress();
         setStatus("Build complete — downloading your file…");
         const download=await fetch(API_BASE+"/api/jobs/"+encodeURIComponent(job_id)+"/download");
         if(!download.ok)throw new Error("Build completed, but the download failed.");
@@ -103,6 +151,6 @@ $("build").addEventListener("click",async()=>{
     }
     if(state!=="completed"&&state!=="failed")throw new Error("The build took too long. Please try again.");
   }catch(error){setStatus(error.message||"Something went wrong.",true);}
-  finally{button.disabled=false;button.querySelector("span").textContent="Build my Windows app";$("progress").classList.remove("show");window.turnstile?.reset?.();renderFiles();}
+  finally{button.disabled=false;button.querySelector("span").textContent="Build my Windows app";if(simulatedProgress>=100)setTimeout(resetProgress,1100);else resetProgress();window.turnstile?.reset?.();renderFiles();}
 });
 renderFiles();
