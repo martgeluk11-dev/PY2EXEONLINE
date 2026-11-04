@@ -1,0 +1,8 @@
+# Fixed, minimal build toolchain for Python 3.11 on Windows.
+# Pillow is intentionally omitted: uploaded assets are bundled as data files.
+altgraph==0.17.4
+packaging==24.2
+pefile==2023.2.7
+pyinstaller==6.13.0
+pyinstaller-hooks-contrib==2025.4
+pywin32-ctypes==0.2.3
