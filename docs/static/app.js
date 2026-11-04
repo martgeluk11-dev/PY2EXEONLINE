@@ -103,6 +103,6 @@ $("build").addEventListener("click",async()=>{
     }
     if(state!=="completed"&&state!=="failed")throw new Error("The build took too long. Please try again.");
   }catch(error){setStatus(error.message||"Something went wrong.",true);}
-  finally{button.disabled=false;button.querySelector("span").textContent="Build Windows EXE";$("progress").classList.remove("show");window.turnstile?.reset?.();renderFiles();}
+  finally{button.disabled=false;button.querySelector("span").textContent="Build my Windows app";$("progress").classList.remove("show");window.turnstile?.reset?.();renderFiles();}
 });
 renderFiles();
