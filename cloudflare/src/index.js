@@ -17,6 +17,14 @@ async function getMeta(env, id) {
 async function saveMeta(env, meta) {
   await env.JOBS.put(metaKey(meta.id), JSON.stringify(meta), {expirationTtl: TTL});
 }
+async function getEventually(env, key) {
+  for (let attempt=0; attempt<20; attempt++) {
+    const value=await env.JOBS.get(key,"arrayBuffer");
+    if (value) return value;
+    await new Promise(resolve=>setTimeout(resolve,2000));
+  }
+  return null;
+}
 async function verifyCaptcha(request, env, token) {
   if (!env.TURNSTILE_SECRET || !token) return false;
   const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
@@ -132,7 +140,7 @@ export default {
           async start(controller) {
             try {
               for (let i=0;i<meta.result_chunks;i++) {
-                const part = await env.JOBS.get(resultKey(meta.id,i),"arrayBuffer");
+                const part = await getEventually(env,resultKey(meta.id,i));
                 if (!part) throw new Error("A result chunk is missing");
                 controller.enqueue(new Uint8Array(part));
               }
