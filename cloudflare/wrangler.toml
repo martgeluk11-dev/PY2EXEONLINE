@@ -2,6 +2,6 @@ name = "py2exe-online"
 main = "src/index.js"
 compatibility_date = "2026-11-04"
 
-[[r2_buckets]]
-binding = "BUILDS"
-bucket_name = "py2exe-builds"
+# Create a Workers KV namespace named PY2EXE_JOBS and bind it to this Worker
+# using the variable name JOBS in Cloudflare Dashboard > Worker > Settings > Bindings.
+# No R2 bucket or paid storage subscription is used.
