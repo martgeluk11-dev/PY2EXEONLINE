@@ -1,115 +1,190 @@
+const CHUNK = 10 * 1024 * 1024;
+const TTL = 60 * 60 * 24;
+const json = (data, status=200, headers={}) => new Response(JSON.stringify(data), {
+  status, headers: {"Content-Type":"application/json", ...headers}
+});
+const cleanPath = p => typeof p === "string" && !!p && !p.startsWith("/") &&
+  !p.includes("\\") && !p.split("/").some(x => !x || x === "." || x === "..") &&
+  !/^[A-Za-z]:/.test(p);
+const metaKey = id => "jobs/" + id + "/meta";
+const fileKey = (id, path, part) => "jobs/" + id + "/f/" + encodeURIComponent(path) + "/" + part;
+const resultKey = (id, part) => "jobs/" + id + "/r/" + part;
+const validId = id => /^[0-9a-f-]{36}$/i.test(id);
+async function getMeta(env, id) {
+  const raw = await env.JOBS.get(metaKey(id));
+  return raw ? JSON.parse(raw) : null;
+}
+async function saveMeta(env, meta) {
+  await env.JOBS.put(metaKey(meta.id), JSON.stringify(meta), {expirationTtl: TTL});
+}
+async function verifyCaptcha(request, env, token) {
+  if (!env.TURNSTILE_SECRET || !token) return false;
+  const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+    method:"POST",
+    headers:{"Content-Type":"application/x-www-form-urlencoded"},
+    body:new URLSearchParams({secret:env.TURNSTILE_SECRET,response:token,remoteip:request.headers.get("CF-Connecting-IP")||""})
+  });
+  return (await response.json()).success === true;
+}
+function authorized(request, meta) {
+  return (request.headers.get("Authorization") || "") === "Bearer " + meta.token;
+}
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const cors = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Job-Token",
-      "Access-Control-Expose-Headers": "Content-Disposition",
+      "Access-Control-Allow-Origin":"*",
+      "Access-Control-Allow-Methods":"GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers":"Content-Type, Authorization",
+      "Access-Control-Expose-Headers":"Content-Disposition"
     };
-    const reply = (body, status=200, headers={}) =>
-      new Response(body, {status, headers:{...cors,...headers}});
-    if (request.method === "OPTIONS") return reply(null, 204);
+    const reply = (body, status=200, headers={}) => new Response(body, {status,headers:{...cors,...headers}});
+    if (request.method === "OPTIONS") return reply(null,204);
     try {
-      if (url.pathname === "/api/convert" && request.method === "POST") {
-        const form = await request.formData();
-        const captcha = String(form.get("cf-turnstile-response") || "");
-        if (!env.TURNSTILE_SECRET || !captcha) return reply(JSON.stringify({detail:"Please complete the security check first."}),403,{"Content-Type":"application/json"});
-        const verify = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({secret:env.TURNSTILE_SECRET,response:captcha,remoteip:request.headers.get("CF-Connecting-IP")||""})});
-        const verification = await verify.json();
-        if (!verification.success) return reply(JSON.stringify({detail:"Security check failed. Please try again."}),403,{"Content-Type":"application/json"});
-        const files = form.getAll("files");
-        const paths = form.getAll("paths").map(String);
-        if (!files.length || files.length !== paths.length || files.length > 150)
-          return reply(JSON.stringify({detail:"Invalid project files."}),400,{"Content-Type":"application/json"});
-        const entry = String(form.get("entry_file") || "");
-        if (!paths.includes(entry) || !entry.toLowerCase().endsWith(".py"))
-          return reply(JSON.stringify({detail:"Choose an uploaded .py entry file."}),400,{"Content-Type":"application/json"});
-        let total=0;
-        const clean=[];
-        for(let i=0;i<files.length;i++){
-          const f=files[i]; const p=paths[i].replace(/\\/g,"/");
-          if (!(f instanceof File) || !p || p.startsWith("/") || p.split("/").some(x=>!x || x==="." || x==="..") || /^[A-Za-z]:/.test(p))
-            return reply(JSON.stringify({detail:"Invalid project path."}),400,{"Content-Type":"application/json"});
-          total+=f.size;
-          if(f.size>80*1024*1024 || total>80*1024*1024)
-            return reply(JSON.stringify({detail:"Cloud build upload limit is 80 MB total."}),413,{"Content-Type":"application/json"});
-          clean.push({file:f,path:p});
+      if (!env.JOBS) return reply("Missing KV binding: JOBS",500);
+      if (url.pathname === "/api/jobs" && request.method === "POST") {
+        const body = await request.json();
+        if (!await verifyCaptcha(request,env,String(body.captcha||"")))
+          return json({detail:"Security check failed. Please try again."},403,cors);
+        const files = body.files;
+        if (!Array.isArray(files) || !files.length || files.length > 150)
+          return json({detail:"Add between 1 and 150 project files."},400,cors);
+        let total = 0;
+        const seen = new Set();
+        for (const file of files) {
+          if (!cleanPath(file.path) || seen.has(file.path) || !Number.isSafeInteger(file.size) || file.size < 0)
+            return json({detail:"Invalid project file list."},400,cors);
+          seen.add(file.path);
+          total += file.size;
         }
-        const id=crypto.randomUUID();
-        const token=Array.from(crypto.getRandomValues(new Uint8Array(32)),b=>b.toString(16).padStart(2,"0")).join("");
-        const meta={id,token,created:Date.now(),status:"queued",entry_file:entry,
-          app_name:String(form.get("app_name")||"my_app").slice(0,48).replace(/[^A-Za-z0-9_-]/g,"_"),
-          build_type:form.get("build_type")==="folder"?"folder":"onefile",
-          console:String(form.get("console")||"true")==="true",
-          icon_path:String(form.get("icon_path")||"")};
-        for(let i=0;i<clean.length;i++){
-          const key="jobs/"+id+"/files/"+clean[i].path;
-          await env.BUILDS.put(key,clean[i].file.stream(),{httpMetadata:{contentType:clean[i].file.type||"application/octet-stream"}});
+        if (total > 80*1024*1024) return json({detail:"Maximum project upload is 80 MB."},413,cors);
+        const entry = String(body.entry_file||"");
+        if (!seen.has(entry) || !entry.toLowerCase().endsWith(".py"))
+          return json({detail:"Choose an uploaded .py entry file."},400,cors);
+        const id = crypto.randomUUID();
+        const token = Array.from(crypto.getRandomValues(new Uint8Array(32)),b=>b.toString(16).padStart(2,"0")).join("");
+        const meta = {
+          id, token, created:Date.now(), status:"uploading",
+          files:files.map(f=>({path:f.path,size:f.size,chunks:Math.max(1,Math.ceil(f.size/CHUNK))})),
+          entry_file:entry,
+          app_name:String(body.app_name||"my_app").slice(0,48).replace(/[^A-Za-z0-9_-]/g,"_"),
+          build_type:body.build_type==="folder"?"folder":"onefile",
+          console:body.console !== false,
+          icon_path:String(body.icon_path||"")
+        };
+        if (meta.icon_path && !seen.has(meta.icon_path)) return json({detail:"Icon file is missing."},400,cors);
+        await saveMeta(env,meta);
+        return json({job_id:id,upload_token:token,chunk_size:CHUNK},201,cors);
+      }
+      let match = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]+)\/files$/i);
+      if (match && request.method === "POST") {
+        const meta = await getMeta(env,match[1]);
+        if (!meta || meta.status !== "uploading") return reply("Upload session not found",404);
+        if (!authorized(request,meta)) return reply("Unauthorized",401);
+        const path = url.searchParams.get("path") || "";
+        const part = Number(url.searchParams.get("part"));
+        const file = meta.files.find(f=>f.path===path);
+        if (!file || !Number.isInteger(part) || part < 0 || part >= file.chunks) return reply("Invalid file chunk",400);
+        const bytes = await request.arrayBuffer();
+        const expected = part === file.chunks-1 ? file.size - part*CHUNK : CHUNK;
+        if (bytes.byteLength !== expected) return reply("Chunk size mismatch",400);
+        await env.JOBS.put(fileKey(meta.id,path,part),bytes,{expirationTtl:TTL});
+        return reply("ok");
+      }
+      match = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]+)\/start$/i);
+      if (match && request.method === "POST") {
+        const meta = await getMeta(env,match[1]);
+        if (!meta) return reply("Job not found",404);
+        if (!authorized(request,meta)) return reply("Unauthorized",401);
+        if (meta.status !== "uploading") return reply("Build already started",409);
+        for (const file of meta.files) for (let i=0;i<file.chunks;i++) {
+          if (await env.JOBS.get(fileKey(meta.id,file.path,i),"arrayBuffer") === null)
+            return json({detail:"An upload chunk is missing. Please retry."},400,cors);
         }
-        await env.BUILDS.put("jobs/"+id+"/meta.json",JSON.stringify(meta));
-        const dispatch=await fetch("https://api.github.com/repos/"+env.GITHUB_REPO+"/dispatches",{
+        meta.status = "queued";
+        await saveMeta(env,meta);
+        const dispatch = await fetch("https://api.github.com/repos/"+env.GITHUB_REPO+"/dispatches",{
           method:"POST",
           headers:{Authorization:"Bearer "+env.GITHUB_TOKEN,Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json","User-Agent":"Py2EXE-Online"},
-          body:JSON.stringify({event_type:"py2exe-build",client_payload:{job_id:id,job_token:token,worker_url:url.origin}})
+          body:JSON.stringify({event_type:"py2exe-build",client_payload:{job_id:meta.id,job_token:meta.token,worker_url:url.origin}})
         });
-        if(!dispatch.ok){
-          await env.BUILDS.put("jobs/"+id+"/meta.json",JSON.stringify({...meta,status:"failed",error:"Could not start GitHub Actions. Check repository Actions permissions and Worker secrets."}));
-          return reply(JSON.stringify({detail:"Could not start the Windows build. Check GitHub Actions setup."}),502,{"Content-Type":"application/json"});
+        if (!dispatch.ok) {
+          meta.status="failed"; meta.error="Could not start GitHub Actions. Check repository Actions permissions and Worker secrets.";
+          await saveMeta(env,meta);
+          return json({detail:"Could not start the Windows build. Check GitHub Actions setup."},502,cors);
         }
-        return reply(JSON.stringify({job_id:id}),202,{"Content-Type":"application/json"});
+        return reply("ok",202);
       }
-      const statusMatch=url.pathname.match(/^\/api\/jobs\/([a-f0-9-]+)$/i);
-      if(statusMatch && request.method==="GET"){
-        const meta=await env.BUILDS.get("jobs/"+statusMatch[1]+"/meta.json");
-        if(!meta)return reply(JSON.stringify({detail:"Build not found."}),404,{"Content-Type":"application/json"});
-        const m=await meta.json();
-        return reply(JSON.stringify({status:m.status,error:m.error||null,filename:m.filename||null}),200,{"Content-Type":"application/json"});
+      match = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]+)$/i);
+      if (match && request.method === "GET") {
+        const meta = await getMeta(env,match[1]);
+        if (!meta) return json({detail:"Build not found."},404,cors);
+        return json({status:meta.status,error:meta.error||null,filename:meta.filename||null},200,cors);
       }
-      const downloadMatch=url.pathname.match(/^\/api\/jobs\/([a-f0-9-]+)\/download$/i);
-      if(downloadMatch && request.method==="GET"){
-        const metaObj=await env.BUILDS.get("jobs/"+downloadMatch[1]+"/meta.json");
-        if(!metaObj)return reply("Build not found",404);
-        const meta=await metaObj.json();
-        if(meta.status!=="completed")return reply("Build is not ready",409);
-        const obj=await env.BUILDS.get("jobs/"+downloadMatch[1]+"/result");
-        if(!obj)return reply("Build result missing",404);
-        return new Response(obj.body,{headers:{...cors,"Content-Type":meta.filename.endsWith(".zip")?"application/zip":"application/vnd.microsoft.portable-executable","Content-Disposition":'attachment; filename="'+meta.filename.replace(/["\\]/g,"")+'"',"Cache-Control":"no-store"}});
+      match = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]+)\/download$/i);
+      if (match && request.method === "GET") {
+        const meta = await getMeta(env,match[1]);
+        if (!meta) return reply("Build not found",404);
+        if (meta.status !== "completed") return reply("Build is not ready",409);
+        const stream = new ReadableStream({
+          async start(controller) {
+            try {
+              for (let i=0;i<meta.result_chunks;i++) {
+                const part = await env.JOBS.get(resultKey(meta.id,i),"arrayBuffer");
+                if (!part) throw new Error("A result chunk is missing");
+                controller.enqueue(new Uint8Array(part));
+              }
+              controller.close();
+            } catch (e) { controller.error(e); }
+          }
+        });
+        const filename = (meta.filename||"build.exe").replace(/["\\]/g,"");
+        return new Response(stream,{headers:{...cors,"Content-Type":filename.endsWith(".zip")?"application/zip":"application/vnd.microsoft.portable-executable","Content-Disposition":'attachment; filename="'+filename+'"',"Cache-Control":"no-store"}});
       }
-      if(url.pathname.startsWith("/internal/")){
-        const auth=request.headers.get("Authorization")||"";
-        const match=url.pathname.match(/^\/internal\/jobs\/([a-f0-9-]+)\/(manifest|file|result|fail)$/i);
-        if(!match)return reply("Not found",404);
-        const metaObj=await env.BUILDS.get("jobs/"+match[1]+"/meta.json");
-        if(!metaObj)return reply("Not found",404);
-        const meta=await metaObj.json();
-        if(auth!=="Bearer "+meta.token || auth!=="Bearer "+(request.headers.get("X-Job-Token")||meta.token))
-          return reply("Unauthorized",401);
-        if(match[2]==="manifest" && request.method==="GET"){
-          const list=await env.BUILDS.list({prefix:"jobs/"+match[1]+"/files/"});
-          return reply(JSON.stringify({metadata:{entry_file:meta.entry_file,app_name:meta.app_name,build_type:meta.build_type,console:meta.console,icon_path:meta.icon_path},files:list.objects.map(o=>o.key.slice(("jobs/"+match[1]+"/files/").length))}),200,{"Content-Type":"application/json"});
+      match = url.pathname.match(/^\/internal\/jobs\/([0-9a-f-]+)\/(manifest|file|result|complete|fail)$/i);
+      if (match) {
+        const meta = await getMeta(env,match[1]);
+        if (!meta) return reply("Job not found",404);
+        if (!authorized(request,meta)) return reply("Unauthorized",401);
+        const action = match[2];
+        if (action === "manifest" && request.method === "GET") {
+          return json({metadata:{entry_file:meta.entry_file,app_name:meta.app_name,build_type:meta.build_type,console:meta.console,icon_path:meta.icon_path},files:meta.files});
         }
-        if(match[2]==="file" && request.method==="GET"){
-          const p=url.searchParams.get("path")||"";
-          if(!p || p.startsWith("/") || p.split("/").some(x=>!x||x==="."||x===".."))return reply("Bad path",400);
-          const obj=await env.BUILDS.get("jobs/"+match[1]+"/files/"+p);
-          return obj?new Response(obj.body,{headers:cors}):reply("Not found",404);
+        if (action === "file" && request.method === "GET") {
+          const path = url.searchParams.get("path")||"";
+          const part = Number(url.searchParams.get("part"));
+          const file = meta.files.find(f=>f.path===path);
+          if (!file || !Number.isInteger(part) || part<0 || part>=file.chunks) return reply("Bad file chunk",400);
+          const data = await env.JOBS.get(fileKey(meta.id,path,part),"arrayBuffer");
+          return data ? new Response(data,{headers:cors}) : reply("Not found",404);
         }
-        if(match[2]==="result" && request.method==="POST"){
-          const filename=(request.headers.get("X-File-Name")||"build.exe").replace(/[^A-Za-z0-9_.-]/g,"_");
-          await env.BUILDS.put("jobs/"+match[1]+"/result",request.body);
-          await env.BUILDS.put("jobs/"+match[1]+"/meta.json",JSON.stringify({...meta,status:"completed",filename,token:meta.token}));
+        if (action === "result" && request.method === "POST") {
+          const part = Number(url.searchParams.get("part"));
+          const total = Number(url.searchParams.get("total"));
+          if (!Number.isInteger(part)||!Number.isInteger(total)||total<1||total>16||part<0||part>=total) return reply("Invalid result chunk",400);
+          const data = await request.arrayBuffer();
+          if (data.byteLength>CHUNK) return reply("Result chunk too large",413);
+          await env.JOBS.put(resultKey(meta.id,part),data,{expirationTtl:TTL});
+          meta.result_chunks=total;
+          meta.filename=(url.searchParams.get("filename")||"build.exe").replace(/[^A-Za-z0-9_.-]/g,"_");
+          meta.status="building";
+          await saveMeta(env,meta);
           return reply("ok");
         }
-        if(match[2]==="fail" && request.method==="POST"){
+        if (action === "complete" && request.method === "POST") {
+          if (!meta.result_chunks) return reply("No result uploaded",400);
+          for(let i=0;i<meta.result_chunks;i++) if(await env.JOBS.get(resultKey(meta.id,i),"arrayBuffer")===null) return reply("Missing result chunk",400);
+          meta.status="completed"; await saveMeta(env,meta); return reply("ok");
+        }
+        if (action === "fail" && request.method === "POST") {
           const body=await request.json().catch(()=>({}));
-          await env.BUILDS.put("jobs/"+match[1]+"/meta.json",JSON.stringify({...meta,status:"failed",error:String(body.error||"Build failed").slice(0,3000)}));
-          return reply("ok");
+          meta.status="failed"; meta.error=String(body.error||"Build failed").slice(0,3000);
+          await saveMeta(env,meta); return reply("ok");
         }
       }
       return reply("Not found",404);
     } catch(e) {
-      return reply(JSON.stringify({detail:e.message||"Worker error"}),500,{"Content-Type":"application/json"});
+      return json({detail:e.message||"Worker error"},500,cors);
     }
   }
 };
