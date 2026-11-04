@@ -13,7 +13,7 @@ def request(path, data=None, extra=None):
 
 try:
     manifest=json.load(request(f"/internal/jobs/{job}/manifest"))
-    root=pathlib.Path("project")
+    root=pathlib.Path("project").resolve()
     root.mkdir(exist_ok=True)
     for rel in manifest["files"]:
         target=root/pathlib.PurePosixPath(rel)
@@ -45,7 +45,7 @@ try:
     if m["build_type"]=="onefile":
         output=dist/(name+".exe")
     else:
-        output=pathlib.Path(shutil.make_archive(name+"-windows-build","zip",dist,name))
+        output=pathlib.Path(shutil.make_archive(name+"-windows-build","zip",root_dir=dist,base_dir=name))
     if not output.is_file(): raise RuntimeError("Build output was not created")
     data=output.read_bytes()
     request(f"/internal/jobs/{job}/result",data,{"X-File-Name":output.name,"Content-Type":"application/octet-stream"}).read()
