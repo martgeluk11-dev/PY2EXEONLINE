@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#080b09">
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
   <title>Py2EXE Online</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,7 +30,7 @@
         <div class="upload-symbol">↑</div>
         <b>Drop your project files here</b>
         <p>or <label for="files">browse files</label></p>
-        <small>Multiple files supported · Up to 200 MB total</small>
+        <small>Multiple files supported · Up to 80 MB total</small>
         <button type="button" class="folder-button" id="folder-button">＋ Select entire project folder</button>
         <input id="folder" type="file" webkitdirectory multiple hidden>
       </div>
@@ -68,6 +69,7 @@
         <label for="icon">APPLICATION ICON <span>· OPTIONAL</span></label>
         <label class="icon-picker"><span>ICO</span><b id="icon-name">Choose an .ico file</b><input id="icon" type="file" accept=".ico"><em>Browse</em></label>
       </div>
+      <div class="cf-turnstile" data-sitekey="0x4AAAAAAFzcsHnZICFxC91i"></div>
       <button class="build" id="build" type="button" disabled><span>Build Windows EXE</span><b>→</b></button>
       <div class="status" id="status" role="status"></div>
       <div class="progress" id="progress"><i></i></div>
