@@ -1,0 +1,7 @@
+name = "py2exe-online"
+main = "src/index.js"
+compatibility_date = "2026-11-04"
+
+[[r2_buckets]]
+binding = "BUILDS"
+bucket_name = "py2exe-builds"
