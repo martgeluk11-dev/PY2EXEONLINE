@@ -1,4 +1,6 @@
 const $ = (id) => document.getElementById(id);
+// Set this to your deployed Cloudflare Worker URL (without a trailing slash).
+const API_BASE = window.PY2EXE_API_BASE || "https://YOUR-WORKER.workers.dev";
 const fileInput = $("files"), folderInput = $("folder");
 let projectFiles = [];
 let format = "onefile";
@@ -75,21 +77,39 @@ $("build").addEventListener("click",async()=>{
   const button=$("build");button.disabled=true;button.querySelector("span").textContent="Building your app…";
   $("progress").classList.add("show");setStatus("Uploading project and building your Windows executable. This can take a few minutes.");
   try{
-    const response=await fetch("/api/convert",{method:"POST",body:data});
+    if(API_BASE.includes("YOUR-WORKER")){throw new Error("The Cloudflare Worker URL has not been configured yet.");}
+    const response=await fetch(API_BASE+"/api/convert",{method:"POST",body:data});
     if(!response.ok){
       let message=await response.text();
       try{const parsed=JSON.parse(message);message=parsed.detail||message}catch{}
       throw new Error(message);
     }
-    const blob=await response.blob();
-    const disposition=response.headers.get("content-disposition")||"";
-    const match=disposition.match(/filename="?([^";]+)"?/i);
-    const filename=match?match[1]:(format==="onefile"?"my_app.exe":"my_app-windows-build.zip");
-    const url=URL.createObjectURL(blob),a=document.createElement("a");
-    a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),30000);
-    setStatus("Build complete — your download should have started.");
-  }catch(error){setStatus(error.message||"Something went wrong.",true)}
+    const {job_id}=await response.json();
+    if(!job_id) throw new Error("The build service did not return a job ID.");
+    setStatus("Project uploaded. Waiting for a Windows build…");
+    const deadline=Date.now()+12*60*1000;
+    let state="queued";
+    while(Date.now()<deadline){
+      await new Promise(resolve=>setTimeout(resolve,2500));
+      const check=await fetch(API_BASE+"/api/jobs/"+encodeURIComponent(job_id));
+      if(!check.ok) throw new Error("Could not check build status.");
+      const result=await check.json();
+      state=result.status;
+      if(state==="failed") throw new Error(result.error||"Windows build failed.");
+      if(state==="completed"){
+        setStatus("Build complete — downloading your file…");
+        const download=await fetch(API_BASE+"/api/jobs/"+encodeURIComponent(job_id)+"/download");
+        if(!download.ok) throw new Error("Build completed, but the download failed.");
+        const blob=await download.blob();
+        const a=document.createElement("a"),objectUrl=URL.createObjectURL(blob);
+        a.href=objectUrl;a.download=result.filename||"my_app.exe";document.body.appendChild(a);a.click();a.remove();
+        setTimeout(()=>URL.revokeObjectURL(objectUrl),30000);
+        setStatus("Build complete — your download should have started.");
+        break;
+      }
+      setStatus(state==="queued"?"Build queued — starting a Windows machine…":"Windows machine is building your app…");
+    }
+    if(state!=="completed" && state!=="failed") throw new Error("The build took too long. Please try again.");  }catch(error){setStatus(error.message||"Something went wrong.",true)}
   finally{button.disabled=false;button.querySelector("span").textContent="Build Windows EXE";$("progress").classList.remove("show");renderFiles()}
 });
 renderFiles();
