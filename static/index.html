@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#080b09">
+  <title>Py2EXE Online</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/"><span class="mark"><i></i><i></i><i></i></span>py<span>2</span>exe</a>
+    <div class="top-status"><b></b> ONLINE CONVERTER</div>
+  </header>
+  <main>
+    <section class="hero">
+      <div class="eyebrow"><i></i> PYTHON PROJECT → WINDOWS APP</div>
+      <h1>Your Python.<br><em>Your own .exe.</em></h1>
+      <p>Package your entire project into a Windows app. Python files, images, videos, audio and everything in between.</p>
+    </section>
+
+    <section class="panel">
+      <div class="heading"><div><small>01</small><strong>Add your project</strong></div><span>REQUIRED</span></div>
+      <div class="drop" id="drop">
+        <input id="files" type="file" multiple>
+        <div class="upload-symbol">↑</div>
+        <b>Drop your project files here</b>
+        <p>or <label for="files">browse files</label></p>
+        <small>Multiple files supported · Up to 200 MB total</small>
+        <button type="button" class="folder-button" id="folder-button">＋ Select entire project folder</button>
+        <input id="folder" type="file" webkitdirectory multiple hidden>
+      </div>
+      <div class="file-summary" id="file-summary" hidden>
+        <div class="summary-top"><b id="file-count">0 files</b><button id="clear" type="button">Remove all</button></div>
+        <div class="file-list" id="file-list"></div>
+      </div>
+
+      <div class="field entry-field">
+        <label for="entry">MAIN PYTHON FILE <span>· REQUIRED</span></label>
+        <select id="entry" disabled><option value="">Add project files first</option></select>
+        <small>This is the .py file that starts your application. Other Python modules are included when imported.</small>
+      </div>
+
+      <div class="rule"></div>
+      <div class="heading"><div><small>02</small><strong>Build settings</strong></div><span>OPTIONAL</span></div>
+      <div class="field">
+        <label for="appname">APPLICATION NAME</label>
+        <input id="appname" value="my_app" maxlength="48" placeholder="my_app">
+      </div>
+      <div class="grid">
+        <div class="field">
+          <label>OUTPUT FORMAT</label>
+          <div class="segments" id="formats">
+            <button type="button" class="selected" data-value="onefile"><b>▣</b> One file<small>Single .exe</small></button>
+            <button type="button" data-value="folder"><b>▤</b> Folder<small>ZIP with dependencies</small></button>
+          </div>
+        </div>
+        <div class="field">
+          <label>CONSOLE WINDOW</label>
+          <div class="toggle"><div><b>Show console</b><small>Terminal window on launch</small></div><label class="switch"><input id="console" type="checkbox" checked><i></i></label></div>
+          <small>Turn off for GUI applications.</small>
+        </div>
+      </div>
+      <div class="field">
+        <label for="icon">APPLICATION ICON <span>· OPTIONAL</span></label>
+        <label class="icon-picker"><span>ICO</span><b id="icon-name">Choose an .ico file</b><input id="icon" type="file" accept=".ico"><em>Browse</em></label>
+      </div>
+      <button class="build" id="build" type="button" disabled><span>Build Windows EXE</span><b>→</b></button>
+      <div class="status" id="status" role="status"></div>
+      <div class="progress" id="progress"><i></i></div>
+      <div class="footnote"><b>ⓘ</b><span>Files are packaged into your app, not hosted separately. Your app may need small path changes to load bundled images, music and videos correctly.</span></div>
+    </section>
+    <footer><span>PY2EXE ONLINE</span><span>POWERED BY PYINSTALLER</span></footer>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>
