@@ -120,3 +120,31 @@ footer .pink{color:var(--pink);margin-left:4px}
   footer{font-size:8px}
 }
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* Dark builder theme — keep the entire interface consistent */
+.builder{background:#101116;color:#f4f2f5;border:1px solid rgba(255,255,255,.13)}
+.builder-heading{color:#e7e4eb;border-color:rgba(255,255,255,.16)}
+.step-label{color:#d7d3dc}
+.step-label em,.field>label em{color:#8c8793}
+.drop{background:#171920;border-color:#55515d;color:#f4f2f5}
+.drop.over{background:#241722;border-color:var(--pink)}
+.upload-icon{border-color:#c9c4ce;color:#f4f2f5}
+.drop p{color:#aaa5b0}
+.drop>small{color:#85808c}
+.file-summary{background:#171920;border-color:#3c3943;color:#f4f2f5}
+.file-row{border-color:#34313b;color:#d8d4dd}
+.file-row span:last-child{color:#96909c}
+.field>label{color:#bcb7c2}
+.field input:not([type=file]),.field select{background:#191b22;border-color:#45414c;color:#f4f2f5}
+.field select:disabled{color:#85808f}
+.field>small{color:#96909c}
+.segments button{background:#191b22;border-color:#45414c;color:#f4f2f5}
+.segments button small{color:#aaa4b0}
+.segments button.selected{background:var(--blue);border-color:var(--blue);color:#fff}
+.toggle{background:#191b22;border-color:#45414c;color:#e8e4ec}
+.icon-picker{background:#191b22;border-color:#45414c}
+.icon-picker b{color:#e4e0e8}
+.security{border-color:#393640}
+.security>span{color:#aaa4b0}
+.status{color:#a9c8f0}
+.progress{background:#34313b}
