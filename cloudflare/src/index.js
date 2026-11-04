@@ -101,6 +101,8 @@ export default {
           if (await env.JOBS.get(fileKey(meta.id,file.path,i),"arrayBuffer") === null)
             return json({detail:"An upload chunk is missing. Please retry."},400,cors);
         }
+        const wait = 1100 - (Date.now() - meta.created);
+        if (wait > 0) await new Promise(resolve=>setTimeout(resolve,wait));
         meta.status = "queued";
         await saveMeta(env,meta);
         const dispatch = await fetch("https://api.github.com/repos/"+env.GITHUB_REPO+"/dispatches",{
@@ -165,16 +167,17 @@ export default {
           const data = await request.arrayBuffer();
           if (data.byteLength>CHUNK) return reply("Result chunk too large",413);
           await env.JOBS.put(resultKey(meta.id,part),data,{expirationTtl:TTL});
-          meta.result_chunks=total;
-          meta.filename=(url.searchParams.get("filename")||"build.exe").replace(/[^A-Za-z0-9_.-]/g,"_");
-          meta.status="building";
-          await saveMeta(env,meta);
           return reply("ok");
         }
         if (action === "complete" && request.method === "POST") {
-          if (!meta.result_chunks) return reply("No result uploaded",400);
-          for(let i=0;i<meta.result_chunks;i++) if(await env.JOBS.get(resultKey(meta.id,i),"arrayBuffer")===null) return reply("Missing result chunk",400);
-          meta.status="completed"; await saveMeta(env,meta); return reply("ok");
+          const total=Number(url.searchParams.get("total"));
+          if (!Number.isInteger(total)||total<1||total>8) return reply("Invalid result size",400);
+          for(let i=0;i<total;i++) if(await env.JOBS.get(resultKey(meta.id,i),"arrayBuffer")===null) return reply("Missing result chunk",400);
+          meta.result_chunks=total;
+          meta.filename=(url.searchParams.get("filename")||"build.exe").replace(/[^A-Za-z0-9_.-]/g,"_");
+          meta.status="completed";
+          await saveMeta(env,meta);
+          return reply("ok");
         }
         if (action === "fail" && request.method === "POST") {
           const body=await request.json().catch(()=>({}));
