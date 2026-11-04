@@ -3,7 +3,7 @@ import json, os, pathlib, subprocess, sys, urllib.parse, urllib.request, urllib.
 job=os.environ["JOB_ID"]
 token=os.environ["JOB_TOKEN"]
 base=os.environ["WORKER_URL"].rstrip("/")
-headers={"Authorization":"Bearer "+token,"X-Job-Token":token}
+headers={"Authorization":"Bearer "+token,"X-Job-Token":token,"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36","Accept":"application/json, application/octet-stream"}
 CHUNK=10*1024*1024
 
 def request(path, data=None, extra=None):
