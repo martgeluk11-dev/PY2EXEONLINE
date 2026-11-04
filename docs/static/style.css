@@ -194,3 +194,19 @@ button,input,select{font:inherit}button{color:inherit}a{color:inherit}
  .builder-intro h2,.how-heading h2,.features-copy h2{font-size:40px}.segments button{padding-left:37px}
 }
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+
+/* EXEcify minimal converter layout */
+.simple-hero{background:#fff;overflow:visible}
+.simple-hero .hero-inner{min-height:0;padding:74px 0 48px;display:block}
+.simple-hero .hero-copy{padding:0}
+.simple-hero h1{margin:0;font-size:clamp(42px,6vw,72px);line-height:1.05;letter-spacing:-.075em}
+.builder-section{padding:30px 0 90px}
+.builder-intro{display:none}
+.progress{height:5px;border-radius:6px;background:#e8edf7;overflow:hidden}
+.progress i{width:0;height:100%;background:var(--blue);border-radius:6px;animation:none;transition:width .45s cubic-bezier(.22,.8,.25,1)}
+@media(max-width:700px){
+  .simple-hero .hero-inner{padding:54px 0 30px}
+  .simple-hero h1{font-size:clamp(36px,9vw,54px)}
+  .builder-section{padding:22px 0 65px}
+}
