@@ -15,6 +15,9 @@ async function getMeta(env, id) {
   return raw ? JSON.parse(raw) : null;
 }
 async function saveMeta(env, meta) {
+  const wait=1100-(Date.now()-(meta.updated||0));
+  if(wait>0) await new Promise(resolve=>setTimeout(resolve,wait));
+  meta.updated=Date.now();
   await env.JOBS.put(metaKey(meta.id), JSON.stringify(meta), {expirationTtl: TTL});
 }
 async function getEventually(env, key) {
@@ -109,8 +112,6 @@ export default {
           if (await env.JOBS.get(fileKey(meta.id,file.path,i),"arrayBuffer") === null)
             return json({detail:"An upload chunk is missing. Please retry."},400,cors);
         }
-        const wait = 1100 - (Date.now() - meta.created);
-        if (wait > 0) await new Promise(resolve=>setTimeout(resolve,wait));
         meta.status = "queued";
         await saveMeta(env,meta);
         const dispatch = await fetch("https://api.github.com/repos/"+env.GITHUB_REPO+"/dispatches",{
