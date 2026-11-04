@@ -5,6 +5,43 @@ let projectFiles = [];
 let format = "onefile";
 let iconFile = null;
 const CHUNK_SIZE = 10 * 1024 * 1024;
+let progressTimer = null;
+let simulatedProgress = 0;
+function startProgress() {
+  const bar = $("progress");
+  const fill = bar.querySelector("i");
+  clearTimeout(progressTimer);
+  simulatedProgress = 0;
+  fill.style.width = "0%";
+  bar.classList.add("show");
+  bar.setAttribute("aria-valuenow", "0");
+  const tick = () => {
+    if (simulatedProgress >= 98) return;
+    const pause = simulatedProgress < 60 ? (Math.random() < .22 ? 900 : 280) : (Math.random() < .35 ? 1400 : 650);
+    const step = simulatedProgress < 60
+      ? (Math.random() < .35 ? 1 : Math.random() < .5 ? 2 : 4)
+      : (Math.random() < .5 ? 0.25 : Math.random() < .7 ? 0.5 : 1);
+    simulatedProgress = Math.min(simulatedProgress + step, simulatedProgress < 60 ? 60 : 98);
+    fill.style.width = simulatedProgress + "%";
+    bar.setAttribute("aria-valuenow", String(Math.floor(simulatedProgress)));
+    if (simulatedProgress < 60 || simulatedProgress < 98) progressTimer = setTimeout(tick, pause);
+  };
+  progressTimer = setTimeout(tick, 350);
+}
+function finishProgress() {
+  clearTimeout(progressTimer);
+  simulatedProgress = 100;
+  const bar = $("progress");
+  bar.querySelector("i").style.width = "100%";
+  bar.setAttribute("aria-valuenow", "100");
+}
+function resetProgress() {
+  clearTimeout(progressTimer);
+  simulatedProgress = 0;
+  $("progress").classList.remove("show");
+  $("progress").querySelector("i").style.width = "0%";
+  $("progress").setAttribute("aria-valuenow", "0");
+}
 
 function addFiles(list) {
   const incoming = [...list].map(file => ({file, path:file.webkitRelativePath || file.name}));
@@ -64,7 +101,7 @@ $("build").addEventListener("click",async()=>{
   const captcha=window.turnstile?.getResponse?.();
   if(!captcha){setStatus("Please complete the security check first.",true);return;}
   const button=$("build");button.disabled=true;button.querySelector("span").textContent="Uploading project…";
-  $("progress").classList.add("show");
+  startProgress();
   try{
     if(API_BASE.includes("YOUR-WORKER"))throw new Error("The build service URL has not been configured yet.");
     const create=await fetch(API_BASE+"/api/jobs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
@@ -91,6 +128,7 @@ $("build").addEventListener("click",async()=>{
       const result=await check.json();state=result.status;
       if(state==="failed")throw new Error(result.error||"Windows build failed.");
       if(state==="completed"){
+        finishProgress();
         setStatus("Build complete — downloading your file…");
         const download=await fetch(API_BASE+"/api/jobs/"+encodeURIComponent(job_id)+"/download");
         if(!download.ok)throw new Error("Build completed, but the download failed.");
@@ -103,6 +141,6 @@ $("build").addEventListener("click",async()=>{
     }
     if(state!=="completed"&&state!=="failed")throw new Error("The build took too long. Please try again.");
   }catch(error){setStatus(error.message||"Something went wrong.",true);}
-  finally{button.disabled=false;button.querySelector("span").textContent="Build my Windows app";$("progress").classList.remove("show");window.turnstile?.reset?.();renderFiles();}
+  finally{button.disabled=false;button.querySelector("span").textContent="Build my Windows app";if(simulatedProgress<100)resetProgress();else setTimeout(resetProgress,900);window.turnstile?.reset?.();renderFiles();}
 });
 renderFiles();
