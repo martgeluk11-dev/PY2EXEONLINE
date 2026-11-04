@@ -126,9 +126,8 @@ button,input,select{font:inherit}button{color:inherit}a{color:inherit}
 .build:disabled{opacity:.48;cursor:not-allowed;box-shadow:none}.build b{font-size:20px;font-weight:500;color:#e2e9ff}
 .status{font:10px var(--mono);line-height:1.65;white-space:pre-wrap;color:#267d60;margin-top:0}
 .status:not(:empty){margin-top:12px}.status.error{color:#c03f56}
-.progress{height:3px;background:#e7edf8;margin-top:10px;display:none;overflow:hidden;border-radius:4px}.progress.show{display:block}
-.progress i{display:block;width:35%;height:100%;background:var(--blue);animation:load 1.2s infinite ease-in-out}
-@keyframes load{from{transform:translateX(-110%)}to{transform:translateX(310%)}}
+.progress{height:5px;background:#e7edf8;margin-top:10px;display:none;overflow:hidden;border-radius:6px}.progress.show{display:block}
+.progress i{display:block;width:0;height:100%;background:var(--blue);border-radius:6px;transition:width .42s cubic-bezier(.22,.8,.25,1)}
 .builder-footnote{display:flex;align-items:center;gap:8px;margin-top:15px;color:#9aa5b7;font-size:9px}.builder-footnote span{color:#8ca3f3;font-size:14px}
 .how-section{padding:103px 0 110px;background:#fff}
 .how-heading{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:37px}
