@@ -9,6 +9,7 @@ from typing import Annotated
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.background import BackgroundTask
 from starlette.concurrency import run_in_threadpool
 
 BASE = Path(__file__).resolve().parent
@@ -171,15 +172,16 @@ async def convert(
             raise HTTPException(500, str(exc))
 
         media = "application/zip" if result_path.suffix == ".zip" else "application/vnd.microsoft.portable-executable"
-        return FileResponse(
+        response = FileResponse(
             result_path, media_type=media,
             filename=result_path.name,
-            background=None,
+            background=BackgroundTask(temp.cleanup),
         )
+        temp = None
+        return response
     finally:
-        # FileResponse streams after the endpoint returns, so do not remove the temp folder here.
-        # Starlette's response background cleanup removes it after the download finishes.
-        pass
+        if temp is not None:
+            temp.cleanup()
 
 
 @app.get("/api/health")
