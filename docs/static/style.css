@@ -193,3 +193,12 @@ button,input,select{font:inherit}button{color:inherit}a{color:inherit}
  .builder-intro h2,.how-heading h2,.features-copy h2{font-size:40px}.segments button{padding-left:37px}
 }
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+
+/* How the remote Windows build works */
+.build-explainer{max-width:850px;margin:28px auto 0;padding:23px 26px;background:#f7f9fe;border:1px solid #e9edf6;border-radius:12px}
+.build-explainer-label{display:flex;align-items:center;gap:9px;margin-bottom:11px;color:#52627d;font:9px var(--mono);letter-spacing:1.1px}
+.build-explainer-label span{width:7px;height:7px;border-radius:50%;background:var(--blue)}
+.build-explainer p{margin:0;color:#687790;font-size:12px;line-height:1.9}
+.build-explainer code{padding:2px 5px;background:#eaf0ff;border-radius:4px;color:#315fc4;font:11px var(--mono)}
+@media(max-width:600px){.build-explainer{margin-top:18px;padding:19px}}
