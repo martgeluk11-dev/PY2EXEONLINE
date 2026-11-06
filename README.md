@@ -2,6 +2,8 @@
 
 **Try it online:** [https://martgeluk11-dev.github.io/PY2EXEONLINE/](https://martgeluk11-dev.github.io/PY2EXEONLINE/)
 
+<img width="1364" height="766" alt="Screenshot 2026-11-06 13 24 24" src="https://github.com/user-attachments/assets/e7a66245-ccd3-4691-b1be-887d8afa458a" />
+
 A browser-based Python project packager that builds **real Windows .exe files** with PyInstaller.
 
 ## Features
