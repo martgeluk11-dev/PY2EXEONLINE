@@ -23,7 +23,7 @@ button,input,select{font:inherit}button{color:inherit}a{color:inherit}
 .hero-kicker,.section-kicker,.hero-caption,.hero-edge,.visual-top-label,.visual-bottom,.code-card-foot,.exe-app-meta,.visual-sticker,.closing-kicker,.site-footer .footer-inner>span{font-family:var(--mono);letter-spacing:.75px}
 .hero-kicker{display:flex;align-items:center;gap:10px;color:#77849b;font-size:10px}
 .kicker-dot{width:7px;height:7px;background:#37bd91;border-radius:50%;box-shadow:0 0 0 4px #37bd911a}
-.hero h1{margin:24px 0 20px;font-size:clamp(59px,6.5vw,86px);line-height:.99;letter-spacing:-.085em;font-weight:800;color:#182541}
+.hero h1{margin:24px 0 20px;font-size:clamp(59px,6.5vw,86px);line-height:.99;letter-spacing:-.035em;font-weight:800;color:#182541}
 .hero h1 span{color:var(--blue)}
 .hero-lead{max-width:480px;color:#68758d;font-size:15px;line-height:1.85;margin:0}
 .hero-actions{display:flex;align-items:center;gap:21px;margin-top:30px;flex-wrap:wrap}
@@ -68,7 +68,7 @@ button,input,select{font:inherit}button{color:inherit}a{color:inherit}
 .builder-intro{display:grid;grid-template-columns:1fr 1fr;align-items:end;gap:30px;margin-bottom:34px}
 .section-kicker{display:flex;align-items:center;gap:11px;font-size:9px;color:#8794aa}
 .section-kicker>span{width:24px;height:24px;display:grid;place-items:center;background:#e9efff;color:var(--blue);border-radius:6px}
-.builder-intro h2,.how-heading h2,.features-copy h2{font-size:clamp(42px,5vw,61px);line-height:1.03;letter-spacing:-.075em;margin:17px 0 0;color:#1b2946}
+.builder-intro h2,.how-heading h2,.features-copy h2{font-size:clamp(42px,5vw,61px);line-height:1.03;letter-spacing:-.025em;margin:17px 0 0;color:#1b2946}
 .builder-intro h2 span,.how-heading h2 span,.features-copy h2 span{color:var(--blue)}
 .builder-intro>p{max-width:340px;margin:0 0 7px;color:#748198;font-size:13px;line-height:1.8}
 .builder{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(350px,.92fr);background:#fff;border:1px solid #e3e9f3;border-radius:17px;overflow:hidden;box-shadow:0 24px 65px #23385f0c}
