@@ -1,4 +1,6 @@
-# Py2EXE Online
+# EXEcify
+
+**Try it online:** [https://martgeluk11-dev.github.io/PY2EXEONLINE/](https://martgeluk11-dev.github.io/PY2EXEONLINE/)
 
 A browser-based Python project packager that builds **real Windows .exe files** with PyInstaller.
 
