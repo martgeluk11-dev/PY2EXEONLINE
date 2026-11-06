@@ -19,7 +19,7 @@ button,input,select{font:inherit}button{color:inherit}a{color:inherit}
 .header-cta span{font-size:16px;color:#dbe4ff}.header-cta:hover,.primary-cta:hover,.closing-cta:hover{background:var(--blue-dark);transform:translateY(-2px)}
 .hero{position:relative;background:#fff;overflow:hidden}
 .hero-inner{width:min(1240px,calc(100% - 64px));min-height:620px;margin:auto;display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:50px;padding:62px 0 55px}
-.hero-copy{padding:0 0 14px;position:relative;z-index:2}
+.hero-copy{padding:0 0 14px;position:relative;z-index:2;transform:translateY(-42px)}
 .hero-kicker,.section-kicker,.hero-caption,.hero-edge,.visual-top-label,.visual-bottom,.code-card-foot,.exe-app-meta,.visual-sticker,.closing-kicker,.site-footer .footer-inner>span{font-family:var(--mono);letter-spacing:.75px}
 .hero-kicker{display:flex;align-items:center;gap:10px;color:#77849b;font-size:10px}
 .kicker-dot{width:7px;height:7px;background:#37bd91;border-radius:50%;box-shadow:0 0 0 4px #37bd911a}
@@ -170,7 +170,7 @@ button,input,select{font:inherit}button{color:inherit}a{color:inherit}
 }
 @media(max-width:700px){
  .site-header{height:70px}.header-inner,.footer-inner{width:calc(100% - 38px)}.brand{font-size:19px}.main-nav{display:none}.header-cta{height:38px;padding:0 12px;font-size:10px;gap:10px}
- .hero-inner{width:calc(100% - 40px);display:flex;flex-direction:column;align-items:stretch;gap:32px;padding:57px 0 32px}
+ .hero-inner{width:calc(100% - 40px);display:flex;flex-direction:column;align-items:stretch;gap:32px;padding:57px 0 32px}.hero-copy{transform:translateY(-18px)}
  .hero h1{font-size:clamp(57px,12vw,78px);margin:21px 0 18px}.hero-lead{font-size:13px;max-width:440px}
  .hero-actions{margin-top:23px;gap:13px}.hero-trust{margin-top:30px;gap:0;justify-content:space-between}.trust-item{gap:6px}.trust-icon{width:25px;height:25px;font-size:12px}.trust-item b{font-size:9px}.trust-item small{font-size:7px}
  .hero-visual{height:330px;width:100%;border-radius:16px}.visual-code-card{top:76px;left:7%;width:38%;height:180px;padding:0 11px}.visual-exe-card{top:103px;right:6%;width:38%;height:145px}.conversion-path{top:159px;width:55px;left:calc(50% - 27px)}.conversion-path b{width:25px;height:25px;font-size:14px}
