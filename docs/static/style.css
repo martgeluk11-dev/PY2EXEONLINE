@@ -2,7 +2,7 @@
   color-scheme:light;
   --ink:#17233d;--muted:#66748e;--blue:#4267ee;--blue-dark:#3154d8;--blue-pale:#edf2ff;
   --line:#e7ecf5;--paper:#f8faff;--white:#fff;--navy:#1c2a4c;
-  --display:"Josefin Sans",Arial,sans-serif;--mono:"DM Mono",monospace;
+  --display:"Manrope",Arial,sans-serif;--mono:"DM Mono",monospace;
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:92px}
