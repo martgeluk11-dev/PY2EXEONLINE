@@ -156,7 +156,7 @@ try:
             main_class=entry.stem
             source_text=entry.read_text(encoding="utf-8",errors="replace")
             import re
-            package_match=re.search(r"(?m)^\\s*package\\s+([A-Za-z0-9_.]+)\\s*;",source_text)
+            package_match=re.search(r"(?m)^\s*package\s+([A-Za-z0-9_.]+)\s*;",source_text)
             if package_match: main_class=package_match.group(1)+"."+main_class
             jar=ROOT/(name+".jar")
             run(["jar","--create","--file",str(jar),"--main-class",main_class,"-C",str(classes),"."])
