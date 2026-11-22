@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#f8faff">
-  <meta name="description" content="Convert Python projects into Windows apps online. Upload your project and build a Windows executable in your browser.">
-  <title>EXEcify — Turn Python into Windows apps</title>
+  <meta name="description" content="Build Windows executables from Python, JavaScript, TypeScript, C, C++, C#, Go and Rust projects online.">
+  <title>EXEcify — Build Windows apps from code</title>
   <link rel="icon" href="./static/execify-logo.ico?v=2" type="image/x-icon">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,8 +33,8 @@
       <div class="hero-inner">
         <div class="hero-copy">
           
-          <h1>Your Python.<br><span>Windows ready.</span></h1>
-          <p class="hero-lead">Turn your Python project into a Windows executable. No complicated setup, no local build tools. Just your project and a few clicks.</p>
+          <h1>Your code.<br><span>Windows ready.</span></h1>
+          <p class="hero-lead">Turn complete coding projects into Windows executables. Upload your source, dependencies and assets — EXEcify handles the Windows build.</p>
           <div class="hero-actions">
             <a class="primary-cta" href="#builder">Convert for free <span>↗</span></a>
             <span class="hero-caption">BUILT ON A REAL WINDOWS MACHINE</span>
@@ -68,7 +68,7 @@
           <div class="visual-bottom"><span>FROM SOURCE</span><span class="visual-bottom-line"></span><span>TO WINDOWS</span></div>
         </div>
       </div>
-      <div class="hero-edge"><span>EXEcify · PYTHON TO WINDOWS</span><span>SCROLL TO EXPLORE ↓</span></div>
+      <div class="hero-edge"><span>EXEcify · CODE TO WINDOWS</span><span>SCROLL TO EXPLORE ↓</span></div>
     </section>
 
     <section class="builder-section" id="builder">
@@ -76,14 +76,14 @@
         <div class="builder-intro">
           <div class="section-kicker"><span>01</span> LET'S MAKE SOMETHING</div>
           <h2>Bring your project.<br><span>We'll build the app.</span></h2>
-          <p>Everything you need to package your Python project, in one simple place.</p>
+          <p>Build projects in multiple programming languages, with their dependencies and assets.</p>
         </div>
 
         <div class="builder">
           <div class="builder-main">
             <div class="builder-step">
               <div class="step-number">01</div>
-              <div class="step-copy"><h3>Upload your project</h3><p>Choose your Python files or upload the whole project folder.</p></div>
+              <div class="step-copy"><h3>Upload your project</h3><p>Choose your source files or upload the whole project folder.</p></div>
             </div>
 
             <div class="drop" id="drop">
@@ -92,7 +92,7 @@
               <b>Drop your project files here</b>
               <p><button type="button" class="folder-button" id="folder-button">Choose project folder <span>↗</span></button></p>
               <input id="folder" type="file" webkitdirectory multiple hidden>
-              <small>PYTHON FILES · IMAGES · AUDIO · VIDEO · OTHER ASSETS</small>
+              <small>SOURCE CODE · DEPENDENCIES · IMAGES · AUDIO · VIDEO</small>
             </div>
 
             <div class="file-summary" id="file-summary" hidden>
@@ -100,10 +100,25 @@
               <div class="file-list" id="file-list"></div>
             </div>
 
+            <div class="field">
+              <label for="language"><span class="field-index">02</span> PROJECT LANGUAGE</label>
+              <select id="language">
+                <option value="auto">Auto-detect language</option>
+                <option value="python">Python</option>
+                <option value="node">JavaScript / Node.js</option>
+                <option value="typescript">TypeScript</option>
+                <option value="c">C</option>
+                <option value="cpp">C++</option>
+                <option value="csharp">C# / .NET</option>
+                <option value="go">Go</option>
+                <option value="rust">Rust</option>
+              </select>
+              <small>EXEcify detects the project type from its files. You can change it manually.</small>
+            </div>
             <div class="field entry-field">
-              <label for="entry"><span class="field-index">02</span> STARTING FILE</label>
+              <label for="entry"><span class="field-index">03</span> PROJECT ENTRY / MANIFEST</label>
               <select id="entry" disabled><option value="">Add project files first</option></select>
-              <small>Choose the .py file that launches your application.</small>
+              <small id="entry-help">Choose the main source file or project manifest.</small>
             </div>
           </div>
 
@@ -162,7 +177,7 @@
         </div>
         <div class="build-explainer">
           <div class="build-explainer-label"><span></span> BEHIND THE SCENES</div>
-          <p>Your project is securely uploaded to our build system, where it is sent to a temporary Windows machine. There, PyInstaller converts your Python code and included assets into a standalone <code>.exe</code> file. Once the build is complete, your executable is sent back to you for download. Temporary project files are automatically deleted after 24 hours.</p>
+          <p>Your project is sent to a temporary Windows build machine. EXEcify selects the matching toolchain — such as PyInstaller, Node.js, CMake, .NET, Go or Rust — and builds your application with its project dependencies and assets. The resulting Windows executable is sent back for download. Temporary project files are automatically deleted after 24 hours.</p>
         </div>
       </div>
     </section>
@@ -183,7 +198,7 @@
     </section>
 
     <section class="closing-banner">
-      <div class="closing-banner-inner"><div><span class="closing-kicker">READY WHEN YOU ARE</span><h2>Your next app starts<br>with a Python file.</h2></div><a href="#builder" class="closing-cta">Start building <span>↗</span></a><div class="closing-watermark">Py<span>.</span></div></div>
+      <div class="closing-banner-inner"><div><span class="closing-kicker">READY WHEN YOU ARE</span><h2>Your next app starts<br>with your code.</h2></div><a href="#builder" class="closing-cta">Start building <span>↗</span></a><div class="closing-watermark">Py<span>.</span></div></div>
     </section>
   </main>
 
