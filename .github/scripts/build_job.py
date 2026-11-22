@@ -6,6 +6,7 @@ base=os.environ["WORKER_URL"].rstrip("/")
 headers={"Authorization":"Bearer "+token,"X-Job-Token":token,"User-Agent":"EXEcify-Windows-Builder","Accept":"application/json, application/octet-stream"}
 CHUNK=10*1024*1024
 ROOT=pathlib.Path("project").resolve()
+PROJECT=ROOT
 DIST=ROOT/"dist"
 
 def request(path,data=None,extra=None):
@@ -26,12 +27,12 @@ def request_eventually(path,attempts=30):
             time.sleep(3)
     raise RuntimeError("Uploaded project is still syncing. Please retry the build.") from last
 
-def run(command,cwd=ROOT,timeout=600,env=None):
+def run(command,cwd=None,timeout=600,env=None):
     safe_env=dict(os.environ)
     for key in ("JOB_ID","JOB_TOKEN","WORKER_URL","GITHUB_TOKEN","ACTIONS_RUNTIME_TOKEN","ACTIONS_ID_TOKEN_REQUEST_TOKEN","ACTIONS_ID_TOKEN_REQUEST_URL"):
         safe_env.pop(key,None)
     safe_env["CI"]="true"
-    result=subprocess.run(command,cwd=cwd,capture_output=True,text=True,timeout=timeout,env=env or safe_env,shell=False)
+    result=subprocess.run(command,cwd=cwd or PROJECT,capture_output=True,text=True,timeout=timeout,env=env or safe_env,shell=False)
     if result.returncode:
         output=(result.stdout+"\n"+result.stderr)[-7000:]
         raise RuntimeError(output or "Build command failed.")
@@ -69,21 +70,41 @@ try:
     name=m["app_name"]
     entry=(ROOT/pathlib.Path(*pathlib.PurePosixPath(m["entry_file"]).parts)).resolve()
     if ROOT not in entry.parents or not entry.is_file(): raise RuntimeError("Selected starting file is missing.")
+    PROJECT=ROOT
+    manifest_names={
+        "python":["requirements.txt"],"node":["package.json"],"typescript":["package.json"],
+        "csharp":[entry.name],"go":["go.mod"],"rust":["Cargo.toml"],
+        "java":["pom.xml","build.gradle","build.gradle.kts"],"c":["CMakeLists.txt"],"cpp":["CMakeLists.txt"]
+    }.get(language,[])
+    if language=="csharp":
+        PROJECT=entry.parent
+    else:
+        for parent in [entry.parent,*entry.parent.parents]:
+            if parent==ROOT or ROOT not in parent.parents: continue
+            if any((parent/item).is_file() for item in manifest_names):
+                PROJECT=parent
+                break
+    if PROJECT==ROOT:
+        project_paths=[pathlib.PurePosixPath(item["path"]).parts for item in manifest["files"] if item["path"]!="__app_icon__.ico"]
+        if project_paths and all(len(parts)>1 and parts[0]==project_paths[0][0] for parts in project_paths):
+            candidate=ROOT/project_paths[0][0]
+            if candidate.is_dir(): PROJECT=candidate
+    DIST=PROJECT/"dist"
     DIST.mkdir(exist_ok=True)
     output=None
 
     if language=="python":
-        requirements=ROOT/"requirements.txt"
+        requirements=PROJECT/"requirements.txt"
         if requirements.is_file(): run([sys.executable,"-m","pip","install","--disable-pip-version-check","-r",str(requirements)],timeout=420)
-        cmd=[sys.executable,"-m","PyInstaller","--noconfirm","--clean","--name",name,"--distpath",str(DIST),"--workpath",str(ROOT/"build"),"--specpath",str(ROOT/"spec"),"--paths",str(ROOT),"--onefile" if m["build_type"]=="onefile" else "--onedir"]
+        cmd=[sys.executable,"-m","PyInstaller","--noconfirm","--clean","--name",name,"--distpath",str(DIST),"--workpath",str(PROJECT/"build"),"--specpath",str(PROJECT/"spec"),"--paths",str(ROOT),"--onefile" if m["build_type"]=="onefile" else "--onedir"]
         if not m["console"]: cmd.append("--windowed")
         if m.get("icon_path"):
-            icon=ROOT/m["icon_path"]
+            icon=PROJECT/m["icon_path"]
             if not icon.is_file() or icon.suffix.lower()!=".ico": raise RuntimeError("Selected icon must be an uploaded .ico file")
             cmd += ["--icon",str(icon)]
-        for asset in ROOT.rglob("*"):
+        for asset in PROJECT.rglob("*"):
             if not asset.is_file(): continue
-            rel=asset.relative_to(ROOT)
+            rel=asset.relative_to(PROJECT)
             if any(p in {"dist","build","spec","__pycache__",".git",".venv","node_modules"} for p in rel.parts): continue
             if asset.suffix.lower() in {".py",".pyc",".spec",".ico"}: continue
             cmd += ["--add-data",f"{asset};{rel.parent.as_posix()}"]
@@ -92,9 +113,9 @@ try:
         output=DIST/(name+".exe") if m["build_type"]=="onefile" else package_folder(DIST/name,name)
 
     elif language in ("node","typescript"):
-        package=ROOT/"package.json"
+        package=PROJECT/"package.json"
         if not package.is_file(): raise RuntimeError("Node.js and TypeScript projects need a package.json file.")
-        lock=ROOT/"package-lock.json"
+        lock=PROJECT/"package-lock.json"
         run(["npm","ci"] if lock.is_file() else ["npm","install","--no-audit","--no-fund"],timeout=480)
         if language=="typescript":
             import json as _json
@@ -107,8 +128,8 @@ try:
             raise RuntimeError("Set main or bin in package.json to the compiled JavaScript entry file (for example dist/index.js).")
         main=pkg.get("bin") or pkg.get("main") or m["entry_file"]
         if isinstance(main,dict): main=next(iter(main.values()))
-        main_path=(ROOT/str(main)).resolve()
-        if ROOT not in main_path.parents or not main_path.is_file(): raise RuntimeError("The package.json main/bin file could not be found.")
+        main_path=(PROJECT/str(main)).resolve()
+        if PROJECT not in main_path.parents or not main_path.is_file(): raise RuntimeError("The package.json main/bin file could not be found.")
         run(["npx","--yes","@yao-pkg/pkg","--targets","node20-win-x64","--output",str(DIST/(name+".exe")),str(main_path)],timeout=600)
         output=DIST/(name+".exe")
 
@@ -123,34 +144,34 @@ try:
             output=candidates[0]
 
     elif language=="go":
-        if not (ROOT/"go.mod").is_file(): raise RuntimeError("Go projects need a go.mod file so dependencies can be resolved.")
-        relative=entry.parent.relative_to(ROOT).as_posix()
+        if not (PROJECT/"go.mod").is_file(): raise RuntimeError("Go projects need a go.mod file so dependencies can be resolved.")
+        relative=entry.parent.relative_to(PROJECT).as_posix()
         target="." if relative=="." else "./"+relative
         run(["go","build","-trimpath","-ldflags=-s -w","-o",str(DIST/(name+".exe")),target],timeout=600)
         output=DIST/(name+".exe")
 
     elif language=="rust":
-        cargo=ROOT/"Cargo.toml"
+        cargo=PROJECT/"Cargo.toml"
         if not cargo.is_file(): raise RuntimeError("Rust projects need a Cargo.toml manifest.")
         run(["cargo","build","--release","--manifest-path",str(cargo)],timeout=600)
-        candidates=list((ROOT/"target"/"release").glob("*.exe"))
+        candidates=list((PROJECT/"target"/"release").glob("*.exe"))
         candidates=[p for p in candidates if p.name.lower()!="build-script-build.exe"]
         if not candidates: raise RuntimeError("Cargo finished but no Windows executable was found.")
-        preferred=ROOT/"target"/"release"/(name+".exe")
+        preferred=PROJECT/"target"/"release"/(name+".exe")
         output=preferred if preferred.is_file() else max(candidates,key=lambda p:p.stat().st_mtime)
 
     elif language=="java":
-        java_sources=list(ROOT.rglob("*.java"))
+        java_sources=list(PROJECT.rglob("*.java"))
         if not java_sources: raise RuntimeError("No Java source files were found.")
-        if (ROOT/"pom.xml").is_file():
-            mvnw=ROOT/"mvnw.cmd"
+        if (PROJECT/"pom.xml").is_file():
+            mvnw=PROJECT/"mvnw.cmd"
             run([str(mvnw),"-DskipTests","package"] if mvnw.is_file() else ["mvn","-DskipTests","package"],timeout=600)
-        elif (ROOT/"gradlew.bat").is_file():
-            run([str(ROOT/"gradlew.bat"),"build"],timeout=600)
-        elif (ROOT/"build.gradle").is_file() or (ROOT/"build.gradle.kts").is_file():
+        elif (PROJECT/"gradlew.bat").is_file():
+            run([str(PROJECT/"gradlew.bat"),"build"],timeout=600)
+        elif (PROJECT/"build.gradle").is_file() or (PROJECT/"build.gradle.kts").is_file():
             run(["gradle","build"],timeout=600)
         else:
-            classes=ROOT/"java-classes"
+            classes=PROJECT/"java-classes"
             classes.mkdir(exist_ok=True)
             run(["javac","-encoding","UTF-8","-d",str(classes)]+[str(p) for p in java_sources],timeout=480)
             main_class=entry.stem
@@ -158,10 +179,10 @@ try:
             import re
             package_match=re.search(r"(?m)^\s*package\s+([A-Za-z0-9_.]+)\s*;",source_text)
             if package_match: main_class=package_match.group(1)+"."+main_class
-            jar=ROOT/(name+".jar")
+            jar=PROJECT/(name+".jar")
             run(["jar","--create","--file",str(jar),"--main-class",main_class,"-C",str(classes),"."])
-        jars=[p for base_dir in (ROOT/"target",ROOT/"build"/"libs") if base_dir.exists() for p in base_dir.rglob("*.jar")]
-        if not jars and (ROOT/(name+".jar")).is_file(): jars=[ROOT/(name+".jar")]
+        jars=[p for base_dir in (PROJECT/"target",PROJECT/"build"/"libs") if base_dir.exists() for p in base_dir.rglob("*.jar")]
+        if not jars and (PROJECT/(name+".jar")).is_file(): jars=[PROJECT/(name+".jar")]
         jars=[p for p in jars if not any(part in {"sources","javadoc"} for part in p.parts) and "-sources" not in p.name and "-javadoc" not in p.name]
         if not jars: raise RuntimeError("Java build completed but no application JAR was found.")
         jar=max(jars,key=lambda p:p.stat().st_mtime)
@@ -174,15 +195,15 @@ try:
     elif language in ("c","cpp"):
         cmake=shutil.which("cmake")
         if not cmake: raise RuntimeError("CMake is not available on the Windows build machine.")
-        cmakelists=ROOT/"CMakeLists.txt"
+        cmakelists=PROJECT/"CMakeLists.txt"
         if not cmakelists.is_file():
-            sources=[p for p in ROOT.rglob("*") if p.is_file() and p.suffix.lower() in ([".c"] if language=="c" else [".cpp",".cc",".cxx"])]
+            sources=[p for p in PROJECT.rglob("*") if p.is_file() and p.suffix.lower() in ([".c"] if language=="c" else [".cpp",".cc",".cxx"])]
             if not sources: raise RuntimeError("No source files for the selected C/C++ language were found.")
             lines=["cmake_minimum_required(VERSION 3.20)",f"project({name} LANGUAGES {'C' if language=='c' else 'CXX'})",f"add_executable({name}"]
-            lines += ["  "+p.relative_to(ROOT).as_posix() for p in sources]
+            lines += ["  "+p.relative_to(PROJECT).as_posix() for p in sources]
             lines += [")"]
             cmakelists.write_text("\n".join(lines)+"\n",encoding="utf-8")
-        build=ROOT/"cmake-build"
+        build=PROJECT/"cmake-build"
         run(["cmake","-S",str(ROOT),"-B",str(build),"-A","x64"],timeout=300)
         run(["cmake","--build",str(build),"--config","Release","--parallel"],timeout=600)
         candidates=[p for p in build.rglob("*.exe") if "CMakeFiles" not in p.parts]
