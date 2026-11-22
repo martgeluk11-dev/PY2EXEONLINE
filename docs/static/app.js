@@ -1,6 +1,6 @@
 const $ = (id) => document.getElementById(id);
 const API_BASE = window.PY2EXE_API_BASE || "https://py2exe-online.martgeluk11.workers.dev";
-const fileInput = $("files"), folderInput = $("folder");
+const fileInput = $("files"), folderInput = $("folder"), zipInput = $("zip-file");
 let projectFiles = [];
 let format = "onefile";
 let iconFile = null;
@@ -103,7 +103,9 @@ function renderFiles(){
 }
 fileInput.addEventListener("change",e=>{addFiles(e.target.files);fileInput.value="";});
 folderInput.addEventListener("change",e=>{addFiles(e.target.files);folderInput.value="";});
+zipInput.addEventListener("change",e=>{addFiles(e.target.files);zipInput.value="";});
 $("folder-button").addEventListener("click",()=>$("folder").click());
+$("zip-button").addEventListener("click",()=>$("zip-file").click());
 $("clear").addEventListener("click",()=>{projectFiles=[];renderFiles();});
 $("language").addEventListener("change",renderFiles);
 const drop=$("drop");
