@@ -5,6 +5,7 @@ let projectFiles = [];
 let format = "onefile";
 let iconFile = null;
 const CHUNK_SIZE = 10 * 1024 * 1024;
+const IGNORED_DIRS = new Set(["node_modules",".git",".venv","venv","__pycache__","dist","build","target","bin","obj",".next",".turbo"]);
 const EXTENSIONS = {
   python:[".py"], node:[".js",".mjs",".cjs"], typescript:[".ts"],
   c:[".c"], cpp:[".cpp",".cc",".cxx"], csharp:[".csproj"],
@@ -32,7 +33,11 @@ function currentLanguage(){
   return selected==="auto"?detectLanguage():selected;
 }
 function addFiles(list){
-  const incoming=[...list].map(file=>({file,path:file.webkitRelativePath||file.name}));
+  const incoming=[...list].map(file=>({file,path:file.webkitRelativePath||file.name}))
+    .filter(item=>{
+      const parts=item.path.replace(/\\/g,"/").split("/");
+      return !parts.some(part=>IGNORED_DIRS.has(part.toLowerCase()))&&![".ds_store","thumbs.db"].includes(parts.at(-1).toLowerCase());
+    });
   const map=new Map(projectFiles.map(item=>[item.path,item]));
   for(const item of incoming)map.set(item.path,item);
   projectFiles=[...map.values()];
