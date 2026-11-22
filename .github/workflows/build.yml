@@ -24,7 +24,6 @@ jobs:
           python -m venv .build-venv
           .build-venv\Scripts\python.exe -m pip install --disable-pip-version-check --no-warn-script-location -r .github/requirements-build.txt
       - name: Set up Rust toolchain
-        if: github.event.client_payload.language == 'rust'
         shell: pwsh
         run: |
           $installer = "$env:TEMP\rustup-init.exe"
