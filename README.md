@@ -10,7 +10,7 @@ A browser-based multi-language project builder that creates **real Windows execu
 
 - Upload multiple files or an entire project folder.
 - Supported languages: **Python, JavaScript / Node.js, TypeScript, C, C++, C# / .NET, Go, Rust and Java**.
-- Upload complete project folders with multiple source files, manifests, dependencies and assets.
+- Upload complete project folders with multiple source files, manifests, dependencies and assets. Generated folders such as node_modules, .git, build and dist are skipped automatically.
 - Resolve dependencies through project-native tools: pip, npm, NuGet/.NET, Go modules and Cargo.
 - C and C++ projects can use CMake; simple source projects get a generated CMake build file.
 - Build on a temporary Windows runner and download the resulting EXE.
@@ -55,4 +55,4 @@ Enable GitHub Actions for the repository. The workflow listens for the `py2exe-b
 
 ## Local Windows build
 
-The legacy FastAPI backend can also be run on Windows with Python 3.11+ using `start.bat`.
+The legacy FastAPI backend can also be run on Windows with Python 3.11+ using `start.bat`; that local backend remains Python-only. Multi-language builds use the online Windows runner.
