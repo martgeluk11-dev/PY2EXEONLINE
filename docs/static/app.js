@@ -15,7 +15,9 @@ const LABELS = {
   python:"Python",node:"JavaScript / Node.js",typescript:"TypeScript",c:"C",cpp:"C++",
   csharp:"C# / .NET",go:"Go",rust:"Rust",java:"Java"
 };
+function hasZipArchive(){return projectFiles.length===1&&projectFiles[0].path.toLowerCase().endsWith(".zip");}
 function detectLanguage(){
+  if(hasZipArchive())return "auto";
   const paths=projectFiles.map(x=>x.path.toLowerCase());
   if(paths.some(x=>x.endsWith("cargo.toml")))return "rust";
   if(paths.some(x=>x.endsWith(".java"))||paths.some(x=>x.endsWith("pom.xml"))||paths.some(x=>x.endsWith("build.gradle"))||paths.some(x=>x.endsWith("build.gradle.kts")))return "java";
@@ -30,14 +32,22 @@ function detectLanguage(){
 }
 function currentLanguage(){
   const selected=$("language").value;
-  return selected==="auto"?detectLanguage():selected;
+  return selected==="auto"?(hasZipArchive()?"auto":detectLanguage()):selected;
 }
 function addFiles(list){
-  const incoming=[...list].map(file=>({file,path:file.webkitRelativePath||file.name}))
+  let incoming=[...list].map(file=>({file,path:file.webkitRelativePath||file.name}))
     .filter(item=>{
       const parts=item.path.replace(/\\/g,"/").split("/");
       return !parts.some(part=>IGNORED_DIRS.has(part.toLowerCase()))&&![".ds_store","thumbs.db"].includes(parts.at(-1).toLowerCase());
     });
+  const archives=incoming.filter(item=>item.path.toLowerCase().endsWith(".zip"));
+  if(archives.length){
+    if(incoming.length!==1){setStatus("Upload one ZIP archive at a time.",true);return;}
+    projectFiles=archives;
+    $("language").value="auto";
+  }else{
+    if(projectFiles.some(item=>item.path.toLowerCase().endsWith(".zip"))){projectFiles=[];}
+  }
   const map=new Map(projectFiles.map(item=>[item.path,item]));
   for(const item of incoming)map.set(item.path,item);
   projectFiles=[...map.values()];
@@ -55,6 +65,7 @@ function renderFiles(){
     row.append(name,size);$("file-list").append(row);
   });
   const language=currentLanguage();
+  const archive=hasZipArchive();
   const folderOption=document.querySelector('#formats [data-value="folder"]');
   if(folderOption)folderOption.hidden=language!=="python";
   if(language!=="python"&&format==="folder"){
@@ -64,9 +75,12 @@ function renderFiles(){
   const iconField=$("icon").closest(".field");
   if(iconField)iconField.hidden=language!=="python";
   if(language!=="python"){iconFile=null;$("icon").value="";$("icon-name").textContent="Choose an icon";}
-  const candidates=projectFiles.filter(item=>EXTENSIONS[language].some(ext=>item.path.toLowerCase().endsWith(ext)));
+  const candidates=archive?projectFiles:projectFiles.filter(item=>EXTENSIONS[language].some(ext=>item.path.toLowerCase().endsWith(ext)));
   const select=$("entry");select.innerHTML="";
-  if(!candidates.length){
+  if(archive){
+    select.add(new Option("Detect project inside ZIP archive",projectFiles[0].path));
+    select.disabled=false;
+  }else if(!candidates.length){
     select.add(new Option(projectFiles.length?"No matching project file found":"Add project files first",""));
     select.disabled=true;
   }else{
@@ -84,7 +98,7 @@ function renderFiles(){
     rust:"Choose Cargo.toml (recommended) or a Rust source file. Cargo.toml is required.",
     java:"Choose the main .java file. Maven or Gradle project files are supported."
   };
-  $("entry-help").textContent=help[language];
+  $("entry-help").textContent=archive?"EXEcify will safely extract the archive and detect its project files and language.":help[language];
   $("build").disabled=!candidates.length||projectFiles.length>150;
 }
 fileInput.addEventListener("change",e=>{addFiles(e.target.files);fileInput.value="";});
