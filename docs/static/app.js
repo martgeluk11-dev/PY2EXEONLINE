@@ -8,15 +8,16 @@ const CHUNK_SIZE = 10 * 1024 * 1024;
 const EXTENSIONS = {
   python:[".py"], node:[".js",".mjs",".cjs"], typescript:[".ts"],
   c:[".c"], cpp:[".cpp",".cc",".cxx"], csharp:[".csproj"],
-  go:[".go","go.mod"], rust:["cargo.toml",".rs"]
+  go:[".go","go.mod"], rust:["cargo.toml",".rs"], java:[".java"]
 };
 const LABELS = {
   python:"Python",node:"JavaScript / Node.js",typescript:"TypeScript",c:"C",cpp:"C++",
-  csharp:"C# / .NET",go:"Go",rust:"Rust"
+  csharp:"C# / .NET",go:"Go",rust:"Rust",java:"Java"
 };
 function detectLanguage(){
   const paths=projectFiles.map(x=>x.path.toLowerCase());
   if(paths.some(x=>x.endsWith("cargo.toml")))return "rust";
+  if(paths.some(x=>x.endsWith(".java"))||paths.some(x=>x.endsWith("pom.xml"))||paths.some(x=>x.endsWith("build.gradle"))||paths.some(x=>x.endsWith("build.gradle.kts")))return "java";
   if(paths.some(x=>x.endsWith(".csproj")))return "csharp";
   if(paths.some(x=>x.endsWith("go.mod")))return "go";
   if(paths.some(x=>x.endsWith("tsconfig.json"))||paths.some(x=>x.endsWith(".ts")))return "typescript";
@@ -75,7 +76,8 @@ function renderFiles(){
     cpp:"Choose the main C++ source file. Multiple source files are supported.",
     csharp:"Choose the .csproj project file. NuGet dependencies are restored automatically.",
     go:"Choose the main .go file or go.mod. A go.mod is required for dependencies.",
-    rust:"Choose Cargo.toml (recommended) or a Rust source file. Cargo.toml is required."
+    rust:"Choose Cargo.toml (recommended) or a Rust source file. Cargo.toml is required.",
+    java:"Choose the main .java file. Maven or Gradle project files are supported."
   };
   $("entry-help").textContent=help[language];
   $("build").disabled=!candidates.length||projectFiles.length>150;
