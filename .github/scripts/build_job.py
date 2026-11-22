@@ -68,27 +68,80 @@ try:
     m=manifest["metadata"]
     language=m.get("language","python")
     name=m["app_name"]
-    entry=(ROOT/pathlib.Path(*pathlib.PurePosixPath(m["entry_file"]).parts)).resolve()
-    if ROOT not in entry.parents or not entry.is_file(): raise RuntimeError("Selected starting file is missing.")
-    PROJECT=ROOT
-    manifest_names={
-        "python":["requirements.txt"],"node":["package.json"],"typescript":["package.json"],
-        "csharp":[entry.name],"go":["go.mod"],"rust":["Cargo.toml"],
-        "java":["pom.xml","build.gradle","build.gradle.kts"],"c":["CMakeLists.txt"],"cpp":["CMakeLists.txt"]
-    }.get(language,[])
-    if language=="csharp":
-        PROJECT=entry.parent
+    archive=(ROOT/pathlib.Path(*pathlib.PurePosixPath(m["entry_file"]).parts)).resolve()
+    if ROOT not in archive.parents or not archive.is_file(): raise RuntimeError("Selected project file is missing.")
+    if archive.suffix.lower()==".zip":
+        extracted=ROOT/"__extracted_project"
+        extracted.mkdir(exist_ok=True)
+        with zipfile.ZipFile(archive) as z:
+            members=z.infolist()
+            if len(members)>3000: raise RuntimeError("ZIP contains too many files (maximum 3,000).")
+            expanded=sum(item.file_size for item in members)
+            if expanded>300*1024*1024: raise RuntimeError("Expanded ZIP is larger than 300 MB.")
+            for item in members:
+                rel=pathlib.PurePosixPath(item.filename)
+                mode=(item.external_attr>>16)&0o170000
+                if rel.is_absolute() or not rel.parts or any(part in ("..","") for part in rel.parts) or "\\\\" in item.filename or mode==0o120000:
+                    raise RuntimeError("ZIP contains an unsafe path or symbolic link.")
+                destination=(extracted/pathlib.Path(*rel.parts)).resolve()
+                if extracted not in destination.parents and destination!=extracted:
+                    raise RuntimeError("ZIP contains a path outside the project folder.")
+            z.extractall(extracted)
+        children=list(extracted.iterdir())
+        PROJECT=children[0] if len(children)==1 and children[0].is_dir() else extracted
+        def find(pattern):
+            matches=[]
+            for path in PROJECT.rglob(pattern):
+                if any(part.lower() in {"node_modules",".git",".venv","venv","__pycache__","dist","build","target","bin","obj"} for part in path.relative_to(PROJECT).parts): continue
+                matches.append(path)
+            return sorted(matches,key=lambda p:(len(p.relative_to(PROJECT).parts),str(p).lower()))
+        if language=="auto":
+            if find("Cargo.toml"): language="rust"
+            elif find("*.csproj"): language="csharp"
+            elif find("go.mod"): language="go"
+            elif find("tsconfig.json"): language="typescript"
+            elif find("package.json"): language="node"
+            elif find("pom.xml") or find("build.gradle") or find("build.gradle.kts") or find("*.java"): language="java"
+            elif find("CMakeLists.txt"):
+                language="cpp" if find("*.cpp") or find("*.cc") or find("*.cxx") else "c"
+            elif find("requirements.txt") or find("*.py"): language="python"
+            elif find("*.cpp") or find("*.cc") or find("*.cxx"): language="cpp"
+            elif find("*.c"): language="c"
+            else: raise RuntimeError("Could not detect the project language. Include a project manifest such as package.json, Cargo.toml, go.mod, .csproj, requirements.txt or CMakeLists.txt.")
+        entry_candidates={
+            "python":find("main.py")+find("app.py")+find("*.py"),
+            "node":find("package.json")+find("*.js")+find("*.mjs"),
+            "typescript":find("package.json")+find("*.ts"),
+            "csharp":find("*.csproj"),
+            "go":find("go.mod")+find("*.go"),
+            "rust":find("Cargo.toml"),
+            "java":find("*.java"),
+            "c":find("CMakeLists.txt")+find("*.c"),
+            "cpp":find("CMakeLists.txt")+find("*.cpp")+find("*.cc")+find("*.cxx")
+        }
+        candidates=entry_candidates.get(language,[])
+        if not candidates: raise RuntimeError("No suitable entry file or project manifest was found for "+language+".")
+        entry=candidates[0]
     else:
-        for parent in [entry.parent,*entry.parent.parents]:
-            if parent==ROOT or ROOT not in parent.parents: continue
-            if any((parent/item).is_file() for item in manifest_names):
-                PROJECT=parent
-                break
-    if PROJECT==ROOT:
-        project_paths=[pathlib.PurePosixPath(item["path"]).parts for item in manifest["files"] if item["path"]!="__app_icon__.ico"]
-        if project_paths and all(len(parts)>1 and parts[0]==project_paths[0][0] for parts in project_paths):
-            candidate=ROOT/project_paths[0][0]
-            if candidate.is_dir(): PROJECT=candidate
+        entry=archive
+        PROJECT=ROOT
+        manifest_names={
+            "python":["requirements.txt"],"node":["package.json"],"typescript":["package.json"],
+            "csharp":[entry.name],"go":["go.mod"],"rust":["Cargo.toml"],
+            "java":["pom.xml","build.gradle","build.gradle.kts"],"c":["CMakeLists.txt"],"cpp":["CMakeLists.txt"]
+        }.get(language,[])
+        if language=="csharp": PROJECT=entry.parent
+        else:
+            for parent in [entry.parent,*entry.parent.parents]:
+                if parent==ROOT or ROOT not in parent.parents: continue
+                if any((parent/item).is_file() for item in manifest_names):
+                    PROJECT=parent
+                    break
+        if PROJECT==ROOT:
+            project_paths=[pathlib.PurePosixPath(item["path"]).parts for item in manifest["files"] if item["path"]!="__app_icon__.ico"]
+            if project_paths and all(len(parts)>1 and parts[0]==project_paths[0][0] for parts in project_paths):
+                candidate=ROOT/project_paths[0][0]
+                if candidate.is_dir(): PROJECT=candidate
     DIST=PROJECT/"dist"
     DIST.mkdir(exist_ok=True)
     output=None
