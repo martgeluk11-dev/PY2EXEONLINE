@@ -96,10 +96,10 @@ try:
     if language=="python":
         requirements=PROJECT/"requirements.txt"
         if requirements.is_file(): run([sys.executable,"-m","pip","install","--disable-pip-version-check","-r",str(requirements)],timeout=420)
-        cmd=[sys.executable,"-m","PyInstaller","--noconfirm","--clean","--name",name,"--distpath",str(DIST),"--workpath",str(PROJECT/"build"),"--specpath",str(PROJECT/"spec"),"--paths",str(ROOT),"--onefile" if m["build_type"]=="onefile" else "--onedir"]
+        cmd=[sys.executable,"-m","PyInstaller","--noconfirm","--clean","--name",name,"--distpath",str(DIST),"--workpath",str(PROJECT/"build"),"--specpath",str(PROJECT/"spec"),"--paths",str(PROJECT),"--onefile" if m["build_type"]=="onefile" else "--onedir"]
         if not m["console"]: cmd.append("--windowed")
         if m.get("icon_path"):
-            icon=PROJECT/m["icon_path"]
+            icon=ROOT/m["icon_path"]
             if not icon.is_file() or icon.suffix.lower()!=".ico": raise RuntimeError("Selected icon must be an uploaded .ico file")
             cmd += ["--icon",str(icon)]
         for asset in PROJECT.rglob("*"):
@@ -204,7 +204,7 @@ try:
             lines += [")"]
             cmakelists.write_text("\n".join(lines)+"\n",encoding="utf-8")
         build=PROJECT/"cmake-build"
-        run(["cmake","-S",str(ROOT),"-B",str(build),"-A","x64"],timeout=300)
+        run(["cmake","-S",str(PROJECT),"-B",str(build),"-A","x64"],timeout=300)
         run(["cmake","--build",str(build),"--config","Release","--parallel"],timeout=600)
         candidates=[p for p in build.rglob("*.exe") if "CMakeFiles" not in p.parts]
         if not candidates: raise RuntimeError("CMake finished but no EXE was produced. Check that your CMake project defines an executable target.")
