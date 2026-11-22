@@ -99,9 +99,12 @@ try:
         if language=="typescript":
             import json as _json
             pkg=_json.loads(package.read_text(encoding="utf-8"))
-            if pkg.get("scripts",{}).get("build"): run(["npm","run","build"],timeout=480)
+            if not pkg.get("scripts",{}).get("build"): raise RuntimeError("Add a build script to package.json to compile your TypeScript project.")
+            run(["npm","run","build"],timeout=480)
         import json as _json
         pkg=_json.loads(package.read_text(encoding="utf-8"))
+        if language=="typescript" and not (pkg.get("bin") or pkg.get("main")):
+            raise RuntimeError("Set main or bin in package.json to the compiled JavaScript entry file (for example dist/index.js).")
         main=pkg.get("bin") or pkg.get("main") or m["entry_file"]
         if isinstance(main,dict): main=next(iter(main.values()))
         main_path=(ROOT/str(main)).resolve()
@@ -135,6 +138,38 @@ try:
         if not candidates: raise RuntimeError("Cargo finished but no Windows executable was found.")
         preferred=ROOT/"target"/"release"/(name+".exe")
         output=preferred if preferred.is_file() else max(candidates,key=lambda p:p.stat().st_mtime)
+
+    elif language=="java":
+        java_sources=list(ROOT.rglob("*.java"))
+        if not java_sources: raise RuntimeError("No Java source files were found.")
+        if (ROOT/"pom.xml").is_file():
+            mvnw=ROOT/"mvnw.cmd"
+            run([str(mvnw),"-DskipTests","package"] if mvnw.is_file() else ["mvn","-DskipTests","package"],timeout=600)
+        elif (ROOT/"gradlew.bat").is_file():
+            run([str(ROOT/"gradlew.bat"),"build"],timeout=600)
+        elif (ROOT/"build.gradle").is_file() or (ROOT/"build.gradle.kts").is_file():
+            run(["gradle","build"],timeout=600)
+        else:
+            classes=ROOT/"java-classes"
+            classes.mkdir(exist_ok=True)
+            run(["javac","-encoding","UTF-8","-d",str(classes)]+[str(p) for p in java_sources],timeout=480)
+            main_class=entry.stem
+            source_text=entry.read_text(encoding="utf-8",errors="replace")
+            import re
+            package_match=re.search(r"(?m)^\\s*package\\s+([A-Za-z0-9_.]+)\\s*;",source_text)
+            if package_match: main_class=package_match.group(1)+"."+main_class
+            jar=ROOT/(name+".jar")
+            run(["jar","--create","--file",str(jar),"--main-class",main_class,"-C",str(classes),"."])
+        jars=[p for base_dir in (ROOT/"target",ROOT/"build"/"libs") if base_dir.exists() for p in base_dir.rglob("*.jar")]
+        if not jars and (ROOT/(name+".jar")).is_file(): jars=[ROOT/(name+".jar")]
+        jars=[p for p in jars if not any(part in {"sources","javadoc"} for part in p.parts) and "-sources" not in p.name and "-javadoc" not in p.name]
+        if not jars: raise RuntimeError("Java build completed but no application JAR was found.")
+        jar=max(jars,key=lambda p:p.stat().st_mtime)
+        run(["jpackage","--type","app-image","--name",name,"--input",str(jar.parent),"--main-jar",jar.name,"--dest",str(DIST)],timeout=600)
+        app_image=DIST/name
+        if not app_image.is_dir() or not (app_image/(name+".exe")).is_file():
+            raise RuntimeError("jpackage did not create the Windows application image.")
+        output=package_folder(app_image,name)
 
     elif language in ("c","cpp"):
         cmake=shutil.which("cmake")
