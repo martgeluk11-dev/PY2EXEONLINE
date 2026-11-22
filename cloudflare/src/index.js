@@ -81,7 +81,7 @@ export default {
         const extensions = {
           python:[".py"], node:[".js",".mjs",".cjs"], typescript:[".ts"],
           c:[".c"], cpp:[".cpp",".cc",".cxx"], csharp:[".csproj"],
-          go:[".go","go.mod"], rust:[".toml",".rs"], java:[".java"]
+          go:[".go","go.mod"], rust:[".toml",".rs"], java:[".java"], auto:[".zip"]
         };
         if (!extensions[language].some(ext=>entry.toLowerCase().endsWith(ext)))
           return json({detail:"The starting file does not match the selected language."},400,cors);
