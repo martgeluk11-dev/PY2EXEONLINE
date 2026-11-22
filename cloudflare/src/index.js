@@ -71,15 +71,27 @@ export default {
           total += file.size;
         }
         if (total > 80*1024*1024) return json({detail:"Maximum project upload is 80 MB."},413,cors);
+        const language = String(body.language||"python").toLowerCase();
+        const supported = ["python","node","typescript","c","cpp","csharp","go","rust"];
+        if (!supported.includes(language))
+          return json({detail:"Unsupported project language."},400,cors);
         const entry = String(body.entry_file||"");
-        if (!seen.has(entry) || !entry.toLowerCase().endsWith(".py"))
-          return json({detail:"Choose an uploaded .py entry file."},400,cors);
+        if (!seen.has(entry))
+          return json({detail:"Choose a starting file included in the project."},400,cors);
+        const extensions = {
+          python:[".py"], node:[".js",".mjs",".cjs"], typescript:[".ts"],
+          c:[".c"], cpp:[".cpp",".cc",".cxx"], csharp:[".csproj"],
+          go:[".go","go.mod"], rust:[".toml","rs"]
+        };
+        if (!extensions[language].some(ext=>entry.toLowerCase().endsWith(ext)))
+          return json({detail:"The starting file does not match the selected language."},400,cors);
         const id = crypto.randomUUID();
         const token = Array.from(crypto.getRandomValues(new Uint8Array(32)),b=>b.toString(16).padStart(2,"0")).join("");
         const meta = {
           id, token, created:Date.now(), status:"uploading",
           files:files.map(f=>({path:f.path,size:f.size,chunks:Math.max(1,Math.ceil(f.size/CHUNK))})),
           entry_file:entry,
+          language,
           app_name:String(body.app_name||"my_app").slice(0,48).replace(/[^A-Za-z0-9_-]/g,"_"),
           build_type:body.build_type==="folder"?"folder":"onefile",
           console:body.console !== false,
@@ -132,12 +144,14 @@ export default {
       if (match && request.method === "GET") {
         const meta = await getMeta(env,match[1]);
         if (!meta) return json({detail:"Build not found."},404,cors);
+        if (!authorized(request,meta)) return json({detail:"Unauthorized"},401,cors);
         return json({status:meta.status,error:meta.error||null,filename:meta.filename||null},200,cors);
       }
       match = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]+)\/download$/i);
       if (match && request.method === "GET") {
         const meta = await getMeta(env,match[1]);
         if (!meta) return reply("Build not found",404);
+        if (!authorized(request,meta)) return reply("Unauthorized",401);
         if (meta.status !== "completed") return reply("Build is not ready",409);
         const stream = new ReadableStream({
           async start(controller) {
