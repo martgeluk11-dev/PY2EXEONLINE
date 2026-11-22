@@ -72,7 +72,7 @@ export default {
         }
         if (total > 80*1024*1024) return json({detail:"Maximum project upload is 80 MB."},413,cors);
         const language = String(body.language||"python").toLowerCase();
-        const supported = ["python","node","typescript","c","cpp","csharp","go","rust"];
+        const supported = ["python","node","typescript","c","cpp","csharp","go","rust","java"];
         if (!supported.includes(language))
           return json({detail:"Unsupported project language."},400,cors);
         const entry = String(body.entry_file||"");
@@ -81,7 +81,7 @@ export default {
         const extensions = {
           python:[".py"], node:[".js",".mjs",".cjs"], typescript:[".ts"],
           c:[".c"], cpp:[".cpp",".cc",".cxx"], csharp:[".csproj"],
-          go:[".go","go.mod"], rust:[".toml","rs"]
+          go:[".go","go.mod"], rust:[".toml",".rs"], java:[".java"]
         };
         if (!extensions[language].some(ext=>entry.toLowerCase().endsWith(ext)))
           return json({detail:"The starting file does not match the selected language."},400,cors);
