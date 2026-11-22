@@ -49,6 +49,15 @@ function renderFiles(){
     row.append(name,size);$("file-list").append(row);
   });
   const language=currentLanguage();
+  const folderOption=document.querySelector('#formats [data-value="folder"]');
+  if(folderOption)folderOption.hidden=language!=="python";
+  if(language!=="python"&&format==="folder"){
+    format="onefile";
+    document.querySelectorAll(".segments button").forEach(b=>b.classList.toggle("selected",b.dataset.value==="onefile"));
+  }
+  const iconField=$("icon").closest(".field");
+  if(iconField)iconField.hidden=language!=="python";
+  if(language!=="python"){iconFile=null;$("icon").value="";$("icon-name").textContent="Choose an icon";}
   const candidates=projectFiles.filter(item=>EXTENSIONS[language].some(ext=>item.path.toLowerCase().endsWith(ext)));
   const select=$("entry");select.innerHTML="";
   if(!candidates.length){
