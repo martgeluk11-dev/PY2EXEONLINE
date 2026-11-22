@@ -164,7 +164,7 @@ $("build").addEventListener("click",async()=>{
     if(!start.ok)throw new Error(await start.text()||"Could not start the Windows build.");
     button.querySelector("span").textContent="Building your "+LABELS[language]+" app…";
     startProgress();setStatus("Upload complete. Waiting for a Windows build…");
-    const deadline=Date.now()+12*60*1000;
+    const deadline=Date.now()+22*60*1000;
     let state="queued";
     while(Date.now()<deadline){
       await new Promise(resolve=>setTimeout(resolve,2500));
