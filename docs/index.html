@@ -83,16 +83,18 @@
           <div class="builder-main">
             <div class="builder-step">
               <div class="step-number">01</div>
-              <div class="step-copy"><h3>Upload your project</h3><p>Choose your source files or upload the whole project folder.</p></div>
+              <div class="step-copy"><h3>Upload your project</h3><p>Choose source files, a project folder or a ZIP archive.</p></div>
             </div>
 
             <div class="drop" id="drop">
               <input id="files" type="file" multiple aria-label="Choose project files">
+              <input id="zip-file" type="file" accept=".zip,application/zip" hidden aria-label="Choose ZIP project archive">
               <div class="upload-illustration"><span class="upload-cloud">↑</span><span class="upload-file">.SRC</span></div>
-              <b>Drop your project files here</b>
+              <b>Drop files or a ZIP archive here</b>
               <p><button type="button" class="folder-button" id="folder-button">Choose project folder <span>↗</span></button></p>
+              <p><button type="button" class="folder-button" id="zip-button">Choose ZIP archive <span>↗</span></button></p>
               <input id="folder" type="file" webkitdirectory multiple hidden>
-              <small>SOURCE CODE · DEPENDENCIES · IMAGES · AUDIO · VIDEO</small>
+              <small>SOURCE CODE · ZIP ARCHIVES · DEPENDENCIES · ASSETS</small>
             </div>
 
             <div class="file-summary" id="file-summary" hidden>
@@ -206,6 +208,6 @@
   <footer class="site-footer">
     <div class="footer-inner"><a class="brand footer-brand" href="/PY2EXEONLINE/"><img class="brand-logo" src="./static/execify-logo.ico" alt="" aria-hidden="true"><span>EXEcify</span></a><span>MAKE YOUR PROJECT WINDOWS READY.</span><span>© 2026 EXECIFY</span></div>
   </footer>
-  <script src="./static/app.js?v=6"></script>
+  <script src="./static/app.js?v=7"></script>
 </body>
 </html>
