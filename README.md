@@ -4,22 +4,24 @@
 
 <img width="1364" height="766" alt="Screenshot 2026-11-06 13 24 24" src="https://github.com/user-attachments/assets/e7a66245-ccd3-4691-b1be-887d8afa458a" />
 
-A browser-based Python project packager that builds **real Windows .exe files** with PyInstaller.
+A browser-based multi-language project builder that creates **real Windows executables** from complete source projects.
 
 ## Features
 
 - Upload multiple files or an entire project folder.
-- Choose the main Python entry file.
-- Bundle images, audio, video, fonts, JSON, text files and other assets.
-- Build a single EXE or a ZIP containing an onedir build.
-- Optional .ico icon and console window.
+- Supported languages: **Python, JavaScript / Node.js, TypeScript, C, C++, C# / .NET, Go and Rust**.
+- Upload complete project folders with multiple source files, manifests, dependencies and assets.
+- Resolve dependencies through project-native tools: pip, npm, NuGet/.NET, Go modules and Cargo.
+- C and C++ projects can use CMake; simple source projects get a generated CMake build file.
+- Build on a temporary Windows runner and download the resulting EXE.
+- Optional .ico icon and console window (currently applied to Python builds).
 
 ## Online architecture
 
 - GitHub Pages hosts the frontend.
 - A Cloudflare Worker handles uploads and job status.
 - Cloudflare Workers KV stores temporary upload/result chunks for 24 hours.
-- GitHub Actions uses a temporary Windows runner to build with PyInstaller.
+- GitHub Actions uses a temporary Windows runner with language-specific toolchains: PyInstaller, Node packaging, CMake/MSVC, .NET, Go and Rust.
 
 The online version does not use R2. It is designed for the Cloudflare Workers Free plan: KV has a free daily quota and operations beyond that quota fail instead of being billed. Keep the account on the Workers Free plan; do not upgrade or enable paid usage. See Cloudflare's [KV limits](https://developers.cloudflare.com/kv/platform/limits/) and [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/).
 
@@ -45,7 +47,10 @@ Enable GitHub Actions for the repository. The workflow listens for the `py2exe-b
 - 80 MB total input.
 - 80 MB output.
 - Upload and build data expires after 24 hours.
-- Dependencies not included with the project are not installed automatically. Add required packages to the build workflow if needed.
+- Python dependencies are read from requirements.txt; Node/TypeScript use package.json and package-lock.json; .NET restores NuGet packages; Go uses go.mod; Rust uses Cargo.toml. C/C++ dependency setup should be declared in CMakeLists.txt.
+- Node.js / TypeScript packaging currently relies on the @yao-pkg/pkg tool and may not support every native module or modern Node API.
+- C/C++ projects with custom dependencies should include a CMakeLists.txt.
+- Java and other languages are not supported by this build engine yet.
 
 ## Local Windows build
 
