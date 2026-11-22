@@ -81,7 +81,7 @@ try:
             for item in members:
                 rel=pathlib.PurePosixPath(item.filename)
                 mode=(item.external_attr>>16)&0o170000
-                if rel.is_absolute() or not rel.parts or any(part in ("..","") for part in rel.parts) or "\\\\" in item.filename or mode==0o120000:
+                if rel.is_absolute() or not rel.parts or rel.parts[0].endswith(":") or any(part in ("..","") for part in rel.parts) or "\\" in item.filename or mode==0o120000:
                     raise RuntimeError("ZIP contains an unsafe path or symbolic link.")
                 destination=(extracted/pathlib.Path(*rel.parts)).resolve()
                 if extracted not in destination.parents and destination!=extracted:
