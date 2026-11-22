@@ -9,7 +9,7 @@ A browser-based multi-language project builder that creates **real Windows execu
 ## Features
 
 - Upload multiple files or an entire project folder.
-- Supported languages: **Python, JavaScript / Node.js, TypeScript, C, C++, C# / .NET, Go and Rust**.
+- Supported languages: **Python, JavaScript / Node.js, TypeScript, C, C++, C# / .NET, Go, Rust and Java**.
 - Upload complete project folders with multiple source files, manifests, dependencies and assets.
 - Resolve dependencies through project-native tools: pip, npm, NuGet/.NET, Go modules and Cargo.
 - C and C++ projects can use CMake; simple source projects get a generated CMake build file.
@@ -21,7 +21,7 @@ A browser-based multi-language project builder that creates **real Windows execu
 - GitHub Pages hosts the frontend.
 - A Cloudflare Worker handles uploads and job status.
 - Cloudflare Workers KV stores temporary upload/result chunks for 24 hours.
-- GitHub Actions uses a temporary Windows runner with language-specific toolchains: PyInstaller, Node packaging, CMake/MSVC, .NET, Go and Rust.
+- GitHub Actions uses a temporary Windows runner with language-specific toolchains: PyInstaller, Node packaging, CMake/MSVC, .NET, Go, Rust and Java.
 
 The online version does not use R2. It is designed for the Cloudflare Workers Free plan: KV has a free daily quota and operations beyond that quota fail instead of being billed. Keep the account on the Workers Free plan; do not upgrade or enable paid usage. See Cloudflare's [KV limits](https://developers.cloudflare.com/kv/platform/limits/) and [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/).
 
@@ -49,8 +49,9 @@ Enable GitHub Actions for the repository. The workflow listens for the `py2exe-b
 - Upload and build data expires after 24 hours.
 - Python dependencies are read from requirements.txt; Node/TypeScript use package.json and package-lock.json; .NET restores NuGet packages; Go uses go.mod; Rust uses Cargo.toml. C/C++ dependency setup should be declared in CMakeLists.txt.
 - Node.js / TypeScript packaging currently relies on the @yao-pkg/pkg tool and may not support every native module or modern Node API.
+- Java projects are packaged as a ZIP containing a Windows app image, launcher EXE and bundled Java runtime.
 - C/C++ projects with custom dependencies should include a CMakeLists.txt.
-- Java and other languages are not supported by this build engine yet.
+- Other languages are not supported by this build engine yet.
 
 ## Local Windows build
 
