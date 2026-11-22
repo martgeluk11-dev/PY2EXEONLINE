@@ -165,9 +165,9 @@ try:
         if not java_sources: raise RuntimeError("No Java source files were found.")
         if (PROJECT/"pom.xml").is_file():
             mvnw=PROJECT/"mvnw.cmd"
-            run([str(mvnw),"-DskipTests","package"] if mvnw.is_file() else ["mvn","-DskipTests","package"],timeout=600)
+            run(["cmd.exe","/c",str(mvnw),"-DskipTests","package"] if mvnw.is_file() else ["mvn","-DskipTests","package"],timeout=600)
         elif (PROJECT/"gradlew.bat").is_file():
-            run([str(PROJECT/"gradlew.bat"),"build"],timeout=600)
+            run(["cmd.exe","/c",str(PROJECT/"gradlew.bat"),"build"],timeout=600)
         elif (PROJECT/"build.gradle").is_file() or (PROJECT/"build.gradle.kts").is_file():
             run(["gradle","build"],timeout=600)
         else:
