@@ -131,7 +131,7 @@ export default {
         const dispatch = await fetch("https://api.github.com/repos/"+env.GITHUB_REPO+"/dispatches",{
           method:"POST",
           headers:{Authorization:"Bearer "+env.GITHUB_TOKEN,Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","Content-Type":"application/json","User-Agent":"Py2EXE-Online"},
-          body:JSON.stringify({event_type:"py2exe-build",client_payload:{job_id:meta.id,job_token:meta.token,worker_url:url.origin}})
+          body:JSON.stringify({event_type:"py2exe-build",client_payload:{job_id:meta.id,job_token:meta.token,worker_url:url.origin,language:meta.language}})
         });
         if (!dispatch.ok) {
           meta.status="failed"; meta.error="Could not start GitHub Actions. Check repository Actions permissions and Worker secrets.";
