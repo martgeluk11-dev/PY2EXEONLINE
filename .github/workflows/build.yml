@@ -23,6 +23,14 @@ jobs:
         run: |
           python -m venv .build-venv
           .build-venv\Scripts\python.exe -m pip install --disable-pip-version-check --no-warn-script-location -r .github/requirements-build.txt
+      - name: Set up Rust toolchain
+        if: github.event.client_payload.language == 'rust'
+        shell: pwsh
+        run: |
+          $installer = "$env:TEMP\rustup-init.exe"
+          Invoke-WebRequest -Uri "https://win.rustup.rs/x86_64" -OutFile $installer
+          Start-Process -FilePath $installer -ArgumentList "-y --profile minimal --default-toolchain stable --default-host x86_64-pc-windows-msvc" -Wait -NoNewWindow
+          "$env:USERPROFILE\.cargo\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
       - name: Download project and build
         env:
           JOB_ID: ${{ github.event.client_payload.job_id }}
