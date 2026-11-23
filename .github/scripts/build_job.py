@@ -28,14 +28,20 @@ def request_eventually(path,attempts=30):
     raise RuntimeError("Uploaded project is still syncing. Please retry the build.") from last
 
 def run(command,cwd=None,timeout=600,env=None):
-    safe_env=dict(os.environ)
-    for key in ("JOB_ID","JOB_TOKEN","WORKER_URL","GITHUB_TOKEN","ACTIONS_RUNTIME_TOKEN","ACTIONS_ID_TOKEN_REQUEST_TOKEN","ACTIONS_ID_TOKEN_REQUEST_URL"):
-        safe_env.pop(key,None)
+    allowed_env={
+        "PATH","SYSTEMROOT","WINDIR","TEMP","TMP","USERPROFILE","APPDATA","LOCALAPPDATA",
+        "PROGRAMFILES","PROGRAMFILES(X86)","COMMONPROGRAMFILES","COMSPEC","PATHEXT",
+        "HOMEDRIVE","HOMEPATH","SYSTEMDRIVE","PROCESSOR_ARCHITECTURE","NUMBER_OF_PROCESSORS",
+        "CARGO_HOME","RUSTUP_HOME"
+    }
+    safe_env={key:value for key,value in os.environ.items() if key.upper() in allowed_env}
     safe_env["CI"]="true"
+    safe_env["PIP_NO_CACHE_DIR"]="1"
+    safe_env["npm_config_audit"]="false"
+    safe_env["npm_config_fund"]="false"
     result=subprocess.run(command,cwd=cwd or PROJECT,capture_output=True,text=True,timeout=timeout,env=env or safe_env,shell=False)
     if result.returncode:
-        output=(result.stdout+"\n"+result.stderr)[-7000:]
-        raise RuntimeError(output or "Build command failed.")
+        raise RuntimeError("Build command failed. Check the project configuration and dependencies; raw compiler output is withheld to avoid exposing source code in build logs.")
     return result
 
 def first_file(patterns):
@@ -277,7 +283,14 @@ try:
             request(f"/internal/jobs/{job}/result?{query}",data,{"Content-Type":"application/octet-stream"}).read()
     request(f"/internal/jobs/{job}/complete?"+urllib.parse.urlencode({"total":total,"filename":output.name}),b"",{"Content-Type":"application/octet-stream"}).read()
 except Exception as exc:
-    message=str(exc) or traceback.format_exc()
-    try: request(f"/internal/jobs/{job}/fail",json.dumps({"error":message[-3000:]}).encode(),{"Content-Type":"application/json"}).read()
+    message=str(exc) or "Build failed."
+    try: request(f"/internal/jobs/{job}/fail",json.dumps({"error":message[-1000:]}).encode(),{"Content-Type":"application/json"}).read()
     except Exception: pass
     raise
+finally:
+    # GitHub-hosted Windows runners are ephemeral; also remove the checked-out
+    # user project immediately so it does not remain in the workspace.
+    try:
+        shutil.rmtree(ROOT, ignore_errors=True)
+    except Exception:
+        pass
