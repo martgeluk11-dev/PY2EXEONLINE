@@ -185,6 +185,19 @@ export default {
         if (!authorized(request,meta)) return json({detail:"Unauthorized"},401,cors);
         return json({status:meta.status,error:meta.error||null,filename:meta.filename||null},200,cors);
       }
+      match = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]+)\/downloaded$/i);
+      if (match && request.method === "POST") {
+        const meta = await getMeta(env,match[1]);
+        if (!meta) return json({detail:"Build not found."},404,cors);
+        if (!authorized(request,meta)) return json({detail:"Unauthorized"},401,cors);
+        if (meta.status === "downloaded") return reply("ok");
+        if (meta.status !== "completed") return reply("Build is not ready",409);
+        meta.status="downloaded";
+        meta.downloaded_at=Date.now();
+        await saveMeta(env,meta,60*60);
+        await deleteResultFiles(env,meta);
+        return reply("ok");
+      }
       match = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]+)\/download$/i);
       if (match && request.method === "GET") {
         const meta = await getMeta(env,match[1]);
@@ -200,14 +213,6 @@ export default {
                 controller.enqueue(new Uint8Array(await decryptStored(env,part)));
               }
               controller.close();
-              // Only remove the downloadable artifact after the full response
-              // has been handed to the client. KV TTL remains the fallback.
-              try {
-                meta.status="downloaded";
-                meta.downloaded_at=Date.now();
-                await saveMeta(env,meta,60*60);
-                await deleteResultFiles(env,meta);
-              } catch (_) {}
             } catch (e) { controller.error(e); }
           }
         });
