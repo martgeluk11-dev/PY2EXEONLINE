@@ -20,15 +20,19 @@ async function encryptStored(env, value) {
   const key=await encryptionKey(env);
   const iv=crypto.getRandomValues(new Uint8Array(12));
   const encrypted=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv},key,value));
-  const packed=new Uint8Array(iv.byteLength+encrypted.byteLength);
-  packed.set(iv,0); packed.set(encrypted,iv.byteLength);
+  const packed=new Uint8Array(3+iv.byteLength+encrypted.byteLength);
+  packed.set([0x45,0x58,0x01],0);
+  packed.set(iv,3); packed.set(encrypted,3+iv.byteLength);
   return packed.buffer;
 }
 async function decryptStored(env, value) {
   const packed=new Uint8Array(value);
-  if (packed.byteLength<28) throw new Error("Encrypted storage value is invalid.");
+  // Values written before encryption was enabled remain readable until their
+  // original 24-hour KV TTL expires. New values carry an EX1 marker.
+  if (packed.byteLength<3 || packed[0]!==0x45 || packed[1]!==0x58 || packed[2]!==0x01) return value;
+  if (packed.byteLength<31) throw new Error("Encrypted storage value is invalid.");
   const key=await encryptionKey(env);
-  return crypto.subtle.decrypt({name:"AES-GCM",iv:packed.slice(0,12)},key,packed.slice(12));
+  return crypto.subtle.decrypt({name:"AES-GCM",iv:packed.slice(3,15)},key,packed.slice(15));
 }
 async function getMeta(env, id) {
   const raw = await env.JOBS.get(metaKey(id));
