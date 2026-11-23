@@ -1,6 +1,6 @@
 # EXEcify
 
-**Try it online:** [https://martgeluk11-dev.github.io/PY2EXEONLINE/](https://martgeluk11-dev.github.io/PY2EXEONLINE/)
+**Try it online:** [https://martgeluk11-dev.github.io/](https://martgeluk11-dev.github.io/)
 
 <img width="1364" height="766" alt="Screenshot 2026-11-06 13 24 24" src="https://github.com/user-attachments/assets/e7a66245-ccd3-4691-b1be-887d8afa458a" />
 
@@ -20,7 +20,7 @@ A browser-based multi-language project builder that creates **real Windows execu
 
 - GitHub Pages hosts the frontend.
 - A Cloudflare Worker handles uploads and job status.
-- Cloudflare Workers KV stores temporary upload/result chunks for 24 hours.
+- Cloudflare Workers KV stores encrypted temporary upload/result chunks. Source chunks are deleted when a build completes or fails; result chunks are deleted after a completed download response. A 24-hour TTL is retained as a cleanup fallback.
 - GitHub Actions uses a temporary Windows runner with language-specific toolchains: PyInstaller, Node packaging, CMake/MSVC, .NET, Go, Rust and Java.
 
 The online version does not use R2. It is designed for the Cloudflare Workers Free plan: KV has a free daily quota and operations beyond that quota fail instead of being billed. Keep the account on the Workers Free plan; do not upgrade or enable paid usage. See Cloudflare's [KV limits](https://developers.cloudflare.com/kv/platform/limits/) and [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/).
@@ -56,3 +56,14 @@ Enable GitHub Actions for the repository. The workflow listens for the `py2exe-b
 ## Local Windows build
 
 The legacy FastAPI backend can also be run on Windows with Python 3.11+ using `start.bat`; that local backend remains Python-only. Multi-language builds use the online Windows runner.
+
+
+## Security and privacy
+
+See the public [EXEcify Privacy & Security page](https://martgeluk11-dev.github.io/privacy.html) for data handling, retention, encryption, build isolation and known limitations.
+
+Security notes:
+- Builds run on ephemeral GitHub-hosted Windows runners, with a 25-minute workflow timeout and per-command timeouts.
+- The runner needs outbound network access to download toolchains and project dependencies. Builds are not currently run in a custom no-network micro-VM.
+- Do not upload secrets or highly confidential source code. Dependency installation and project build scripts execute as part of a build.
+- Generated executables are not digitally signed by EXEcify.
