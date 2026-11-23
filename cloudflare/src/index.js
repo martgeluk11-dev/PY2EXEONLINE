@@ -14,11 +14,24 @@ async function getMeta(env, id) {
   const raw = await env.JOBS.get(metaKey(id));
   return raw ? JSON.parse(raw) : null;
 }
-async function saveMeta(env, meta) {
+async function saveMeta(env, meta, ttl=TTL) {
   const wait=1100-(Date.now()-(meta.updated||0));
   if(wait>0) await new Promise(resolve=>setTimeout(resolve,wait));
   meta.updated=Date.now();
-  await env.JOBS.put(metaKey(meta.id), JSON.stringify(meta), {expirationTtl: TTL});
+  await env.JOBS.put(metaKey(meta.id), JSON.stringify(meta), {expirationTtl: ttl});
+}
+async function deleteSourceFiles(env, meta) {
+  await Promise.all(meta.files.flatMap(file =>
+    Array.from({length:file.chunks}, (_,part) =>
+      env.JOBS.delete(fileKey(meta.id,file.path,part))
+    )
+  ));
+}
+async function deleteResultFiles(env, meta) {
+  if (!Number.isInteger(meta.result_chunks)) return;
+  await Promise.all(Array.from({length:meta.result_chunks}, (_,part) =>
+    env.JOBS.delete(resultKey(meta.id,part))
+  ));
 }
 async function getEventually(env, key) {
   for (let attempt=0; attempt<20; attempt++) {
@@ -136,6 +149,7 @@ export default {
         if (!dispatch.ok) {
           meta.status="failed"; meta.error="Could not start GitHub Actions. Check repository Actions permissions and Worker secrets.";
           await saveMeta(env,meta);
+          await deleteSourceFiles(env,meta);
           return json({detail:"Could not start the Windows build. Check GitHub Actions setup."},502,cors);
         }
         return reply("ok",202);
@@ -162,6 +176,14 @@ export default {
                 controller.enqueue(new Uint8Array(part));
               }
               controller.close();
+              // Only remove the downloadable artifact after the full response
+              // has been handed to the client. KV TTL remains the fallback.
+              try {
+                meta.status="downloaded";
+                meta.downloaded_at=Date.now();
+                await saveMeta(env,meta,60*60);
+                await deleteResultFiles(env,meta);
+              } catch (_) {}
             } catch (e) { controller.error(e); }
           }
         });
@@ -207,12 +229,16 @@ export default {
           meta.filename=(url.searchParams.get("filename")||"build.exe").replace(/[^A-Za-z0-9_.-]/g,"_");
           meta.status="completed";
           await saveMeta(env,meta);
+          // Source uploads are no longer needed once the result is complete.
+          await deleteSourceFiles(env,meta);
           return reply("ok");
         }
         if (action === "fail" && request.method === "POST") {
           const body=await request.json().catch(()=>({}));
-          meta.status="failed"; meta.error=String(body.error||"Build failed").slice(0,3000);
-          await saveMeta(env,meta); return reply("ok");
+          meta.status="failed"; meta.error=String(body.error||"Build failed").slice(0,1000);
+          await saveMeta(env,meta);
+          await deleteSourceFiles(env,meta);
+          return reply("ok");
         }
       }
       return reply("Not found",404);
