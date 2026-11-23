@@ -10,6 +10,26 @@ const metaKey = id => "jobs/" + id + "/meta";
 const fileKey = (id, path, part) => "jobs/" + id + "/f/" + encodeURIComponent(path) + "/" + part;
 const resultKey = (id, part) => "jobs/" + id + "/r/" + part;
 const validId = id => /^[0-9a-f-]{36}$/i.test(id);
+async function encryptionKey(env) {
+  if (!env.DATA_ENCRYPTION_KEY) throw new Error("Worker data-encryption key is not configured.");
+  const raw=Uint8Array.from(atob(env.DATA_ENCRYPTION_KEY),ch=>ch.charCodeAt(0));
+  if (raw.byteLength!==32) throw new Error("Worker data-encryption key must be 32 bytes (base64 encoded).");
+  return crypto.subtle.importKey("raw",raw,{name:"AES-GCM"},false,["encrypt","decrypt"]);
+}
+async function encryptStored(env, value) {
+  const key=await encryptionKey(env);
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const encrypted=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv},key,value));
+  const packed=new Uint8Array(iv.byteLength+encrypted.byteLength);
+  packed.set(iv,0); packed.set(encrypted,iv.byteLength);
+  return packed.buffer;
+}
+async function decryptStored(env, value) {
+  const packed=new Uint8Array(value);
+  if (packed.byteLength<28) throw new Error("Encrypted storage value is invalid.");
+  const key=await encryptionKey(env);
+  return crypto.subtle.decrypt({name:"AES-GCM",iv:packed.slice(0,12)},key,packed.slice(12));
+}
 async function getMeta(env, id) {
   const raw = await env.JOBS.get(metaKey(id));
   return raw ? JSON.parse(raw) : null;
@@ -126,7 +146,7 @@ export default {
         const bytes = await request.arrayBuffer();
         const expected = part === file.chunks-1 ? file.size - part*CHUNK : CHUNK;
         if (bytes.byteLength !== expected) return reply("Chunk size mismatch",400);
-        await env.JOBS.put(fileKey(meta.id,path,part),bytes,{expirationTtl:TTL});
+        await env.JOBS.put(fileKey(meta.id,path,part),await encryptStored(env,bytes),{expirationTtl:TTL});
         return reply("ok");
       }
       match = url.pathname.match(/^\/api\/jobs\/([0-9a-f-]+)\/start$/i);
@@ -173,7 +193,7 @@ export default {
               for (let i=0;i<meta.result_chunks;i++) {
                 const part = await getEventually(env,resultKey(meta.id,i));
                 if (!part) throw new Error("A result chunk is missing");
-                controller.enqueue(new Uint8Array(part));
+                controller.enqueue(new Uint8Array(await decryptStored(env,part)));
               }
               controller.close();
               // Only remove the downloadable artifact after the full response
@@ -205,7 +225,7 @@ export default {
           const file = meta.files.find(f=>f.path===path);
           if (!file || !Number.isInteger(part) || part<0 || part>=file.chunks) return reply("Bad file chunk",400);
           const data = await env.JOBS.get(fileKey(meta.id,path,part),"arrayBuffer");
-          return data ? new Response(data,{headers:cors}) : reply("Not found",404);
+          return data ? new Response(await decryptStored(env,data),{headers:cors}) : reply("Not found",404);
         }
         if (action === "building" && request.method === "POST") {
           meta.status = "building";
@@ -218,7 +238,7 @@ export default {
           if (!Number.isInteger(part)||!Number.isInteger(total)||total<1||total>16||part<0||part>=total) return reply("Invalid result chunk",400);
           const data = await request.arrayBuffer();
           if (data.byteLength>CHUNK) return reply("Result chunk too large",413);
-          await env.JOBS.put(resultKey(meta.id,part),data,{expirationTtl:TTL});
+          await env.JOBS.put(resultKey(meta.id,part),await encryptStored(env,data),{expirationTtl:TTL});
           return reply("ok");
         }
         if (action === "complete" && request.method === "POST") {
