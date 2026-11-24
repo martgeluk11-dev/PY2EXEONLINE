@@ -1,6 +1,6 @@
 # Fixed, minimal build toolchain for Python 3.11 on Windows.
 # Pillow is required by PyInstaller to normalize uploaded application icons.
-altgraph==0.17.4
+altgraph==0.17.5
 packaging==24.2
 pefile==2023.2.7
 pillow==11.2.1
