@@ -91,6 +91,15 @@ export default {
     const reply = (body, status=200, headers={}) => new Response(body, {status,headers:{...cors,...headers}});
     if (request.method === "OPTIONS") return reply(null,204);
     try {
+      if (url.pathname === "/health" && request.method === "GET") {
+        if (!env.JOBS) return json({status:"degraded"},503,cors);
+        try {
+          await env.JOBS.get("__execify_healthcheck__");
+          return json({status:"ok",checked_at:new Date().toISOString()},200,cors);
+        } catch {
+          return json({status:"degraded"},503,cors);
+        }
+      }
       if (!env.JOBS) return reply("Missing KV binding: JOBS",500);
       if (url.pathname === "/api/jobs" && request.method === "POST") {
         const body = await request.json();
